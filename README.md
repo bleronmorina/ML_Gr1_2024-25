@@ -136,6 +136,40 @@ After merging the Mental Health Dataset, we integrated it with the **World Socio
 ## Final Output  
 The final dataset obtained from this process serves as the **complete output** from the Data Gathering and Preparation course. It is now ready for further analysis and insights extraction, ensuring that both **mental health statistics** and **socioeconomic indicators** are properly aligned and structured.
 
+## Missing Values Analysis
+A comprehensive analysis of missing values was performed to ensure data completeness and integrity. Utilizing Python’s pandas library, all columns were systematically examined for null values.
+
+### Results:
+ - No missing values detected across the dataset.
+The dataset is fully complete, eliminating the need for imputation or additional preprocessing related to missing data.
+This guarantees that all features are available for further analysis, visualization, and model training without concerns regarding data gaps.
+
+
+## Outlier Detection Analysis
+A comprehensive analysis of outliers was performed to enhance data quality and ensure reliable results. Utilizing **Z-Score** and **DBSCAN clustering**, outliers were systematically identified and removed.
+
+### Methodology:
+ - **Z-Score Method:** Identified outliers with absolute Z-scores greater than `3`, indicating extreme deviations from the mean.
+ - **DBSCAN Clustering:** Detected outliers using a density-based approach (`eps=0.7`, `min_samples=3`).
+
+### Results:
+ - **Total rows removed:** 1,818  
+ - **Total rows flagged as outliers:** 1,818  
+ - **Rows remaining after outlier removal:** 3,692  
+ - **Cleaned dataset saved to:** `../../Processed Dataset/dataset_cleaned_03.csv`
+
+The cleaned dataset contains only relevant data points, improving overall consistency for further analysis, visualization, and modeling.
+
+### Distribution Comparisons:
+To evaluate the impact of outlier removal, Kernel Density Estimation (KDE) plots were generated for selected features.
+Below are two examples of the results visualization from the script:
+
+![CO₂ Production Distribution](Processing%20Scripts/outliers/results/c02_prod_distribution.png)
+![Life Expectancy Distribution](Processing%20Scripts/outliers/results/lifeexpectancy.png)
+
+
+These visualizations illustrate the changes in distributions before and after outlier removal.
+
 ## SMOTE Balancing Script and Results Explanation
 
 This script demonstrates the application of the SMOTE (Synthetic Minority Over-sampling Technique) algorithm to balance an imbalanced dataset. The process is part of a machine learning project where class imbalance can negatively impact model training and performance.
