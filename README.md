@@ -24,6 +24,36 @@ Course: **Machine Learning**
 ---
 # Phase I
 
+## Chosen Datasets  
+
+For this machine learning course project, we selected two key datasets that provide valuable insights into mental health and socioeconomic conditions across different countries and years. These datasets are:  
+
+### 1. **Mental Health Dataset**  
+- This dataset, compiled by Saloni Dattani and updated by Mohamadreza Momeni, focuses on **mental health statistics**.  
+- It includes data on **mental illness prevalence, survey-based mental health assessments, and diagnostic trends**.  
+- The dataset is valuable because mental health significantly impacts quality of life, productivity, and social well-being.  
+- However, it also has limitations, such as self-reporting biases and differences in mental health awareness across countries.  
+
+### 2. **World Economic Indicators Dataset**  
+- This dataset, sourced from the **World Bank and the United Nations**, contains economic and developmental indicators from **1960 to 2021**.  
+- It includes key metrics such as **GDP per capita, life expectancy, electricity consumption, and the Human Development Index (HDI)**.  
+- These indicators provide a comprehensive view of a country's **economic and social well-being**, making them essential for understanding the external factors affecting mental health.  
+
+## Why These Datasets?  
+
+We chose these datasets because they complement each other, allowing us to analyze the **relationship between economic conditions and mental health trends**. By merging them, we can:  
+
+1. **Examine the Impact of Economic Factors on Mental Health:**  
+   - Analyze how GDP per capita, employment rates, or education levels correlate with mental health conditions.  
+
+2. **Identify Trends Across Countries and Years:**  
+   - Compare mental health statistics in high-income vs. low-income nations.  
+   - Investigate how economic development influences mental health over time.  
+
+3. **Enhance the Predictive Power for Machine Learning Models:**  
+   - By combining both datasets, we create a **more comprehensive feature set** for predictive modeling.  
+   - This allows us to explore potential machine learning models that predict mental health trends based on socioeconomic indicators.  
+
 ## Dataset Description
 
 The chosen dataset is a merged version of two datasets:
