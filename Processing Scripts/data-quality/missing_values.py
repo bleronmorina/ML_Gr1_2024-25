@@ -24,7 +24,7 @@ def check_missing_values(file_path):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Check for missing values in a dataset.")
-    parser.add_argument("file_path", type=str, nargs="?", default="../Processed Dataset/FinalMerged.csv",
+    parser.add_argument("file_path", type=str, nargs="?", default="../../Processed Dataset/FinalMerged.csv",
                         help="Path to the dataset file (CSV or Excel).")
     args = parser.parse_args()
     check_missing_values(args.file_path)
