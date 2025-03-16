@@ -22,3 +22,16 @@ Course: **Machine Learning**
 - **Endrit Gjoka**
 - **Rukije Morina**
 
+---
+---
+
+# Data Merging Process
+
+## Step 1: Merging the Mental Health Dataset  
+We first merged the two main data files from the **Mental Health Dataset**. This was done using an **INNER JOIN** based on the `Country Code` (or `Code` in some files) and `Year`. This ensured that only matching records from both files were included, maintaining data consistency.
+
+## Step 2: Merging with the Socioeconomic Indicator Dataset  
+After merging the Mental Health Dataset, we integrated it with the **World Socioeconomic Indicator Dataset**. This dataset contains various economic, social, and demographic indicators that provide deeper insights into mental health trends across different countries and years.
+
+## Final Output  
+The final dataset obtained from this process serves as the **complete output** from the Data Gathering and Preparation course. It is now ready for further analysis and insights extraction, ensuring that both **mental health statistics** and **socioeconomic indicators** are properly aligned and structured.
