@@ -105,3 +105,52 @@ After merging the Mental Health Dataset, we integrated it with the **World Socio
 
 ## Final Output  
 The final dataset obtained from this process serves as the **complete output** from the Data Gathering and Preparation course. It is now ready for further analysis and insights extraction, ensuring that both **mental health statistics** and **socioeconomic indicators** are properly aligned and structured.
+
+## SMOTE Balancing Script and Results Explanation
+
+This script demonstrates the application of the SMOTE (Synthetic Minority Over-sampling Technique) algorithm to balance an imbalanced dataset. The process is part of a machine learning project where class imbalance can negatively impact model training and performance.
+
+### What the Script Does
+
+1. **Dataset Loading and Preparation:**  
+   - The script loads the original dataset (5,510 rows) from a CSV file.
+   - It converts categorical variables into dummy/indicator variables using `pd.get_dummies()`.
+   - It automatically identifies the target column (if not explicitly named `"target"`, it uses the last column) for classification tasks.
+
+2. **Train-Test Split:**  
+   - The dataset is split into training and test sets. The training set is used for model training and balancing, while the test set remains untouched to ensure an unbiased evaluation.
+   - For example, an 80/20 split would yield approximately 4,408 rows for training and 1,102 rows for testing.
+
+3. **Visualizing Class Distribution Before SMOTE:**  
+   - The script creates a plot to show the distribution of classes in the training set before applying SMOTE. This helps visualize the imbalance in the data.
+
+4. **Applying SMOTE:**  
+   - SMOTE is applied only on the training set. It generates synthetic samples for the minority class by interpolating between existing samples, thereby balancing the class distribution.
+   - After applying SMOTE, the training set size increases (in our example, from around 4,408 rows to 6,404 rows), with each class now having an equal number of samples.
+
+5. **Visualizing Class Distribution After SMOTE:**  
+   - A second plot shows the balanced class distribution in the training set after SMOTE has been applied.
+
+6. **Saving the Updated Dataset:**  
+   - The balanced training set is saved as a new CSV file (`FinalMerged_balanced.csv`), so you can use it for further analysis or model training.
+
+### Results and Interpretation
+
+- **Before SMOTE:**  
+  The training set has an imbalanced distribution, with one class having significantly fewer samples than the other. This imbalance can lead to biased model training.
+
+- **After SMOTE:**  
+  The SMOTE algorithm generates synthetic data points for the minority class, resulting in a balanced training set. In our example, both classes in the training set now have 3,202 samples, leading to a total of 6,404 rows in the balanced training set.
+
+- **Important Note:**  
+  The SMOTE process only affects the training data. The test set remains in its original form (approximately 1,102 rows), ensuring that model evaluation reflects the original data distribution.
+
+Below is an example of the results visualization from the script:
+
+<img width="1000" alt="image" src="https://github.com/user-attachments/assets/23809831-395d-4b3f-958e-9784f248983e" />
+
+The image shows two side-by-side bar plots:
+- The **left plot** displays the class distribution before applying SMOTE.
+- The **right plot** shows the class distribution after SMOTE, where both classes are balanced.
+
+
