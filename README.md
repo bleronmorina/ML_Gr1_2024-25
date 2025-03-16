@@ -94,7 +94,6 @@ The merged dataset(Processed Dataset/FinalMerged.csv) contains 5510 rows and the
 | 58    | Bipolar disorders (share of population) - Sex: Both - Age: Age-standardized              | float64 |
 | 59    | Eating disorders (share of population) - Sex: Both - Age: Age-standardized               | float64 |
 
-## Repository Structure
 
 # Data Merging Process
 
