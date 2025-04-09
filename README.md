@@ -218,3 +218,7 @@ The image shows two side-by-side bar plots:
 - The **right plot** shows the class distribution after SMOTE, where both classes are balanced.
 
 
+---
+---
+# Phase II
+
