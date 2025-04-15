@@ -11,8 +11,10 @@ def load_and_preprocess_data(file_path, target_column):
     try:
         if file_path.endswith('.csv'):
             df = pd.read_csv(file_path)
+            print("reading csv")
         elif file_path.endswith(('.xls', '.xlsx')):
             df = pd.read_excel(file_path)
+            print("reading xlsx")
         else:
             raise ValueError("Unsupported file format. Please provide a CSV or Excel file.")
 
@@ -40,6 +42,7 @@ def load_and_preprocess_data(file_path, target_column):
 
     except Exception as e:
         print(f"Error during data loading and preprocessing: {e}")
+        print("Error fetching..")
         return None, None, None
 
 def train_model(X_train, y_train, model_type='random_forest'):
