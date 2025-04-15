@@ -49,9 +49,9 @@ def detect_outliers_dbscan(data, columns, eps=0.7, min_samples=3):
             dbscan_outliers[col] = data.iloc[data[col].dropna().index[labels == -1]]
     return dbscan_outliers
 
-# Step 3: Handle Outliers
-def handle_outliers(data, columns, z_threshold=3, dbscan_eps=0.7, dbscan_min_samples=3):
-    z_outliers = detect_outliers_zscore(data, columns, z_threshold)
+# Step 3: Handle Outliers with Threshold 3
+def handle_outliers_z3(data, columns, dbscan_eps=0.7, dbscan_min_samples=3):
+    z_outliers = detect_outliers_zscore(data, columns, 3)  # Threshold 3
     dbscan_outliers = detect_outliers_dbscan(data, columns, dbscan_eps, dbscan_min_samples)
 
     # Combine outliers from both methods
@@ -60,8 +60,6 @@ def handle_outliers(data, columns, z_threshold=3, dbscan_eps=0.7, dbscan_min_sam
     all_outlier_indices = z_indices.union(dbscan_indices)
 
     data['is_outlier'] = data.index.isin(all_outlier_indices)
-
-    # Save flagged rows separately
     flagged_rows = data[data['is_outlier']].copy()
     flagged_rows.to_csv('flagged_outliers.csv', index=False)
 
@@ -69,13 +67,49 @@ def handle_outliers(data, columns, z_threshold=3, dbscan_eps=0.7, dbscan_min_sam
     cleaned_data = data[~data.index.isin(z_indices)].copy()
     cleaned_data.drop(columns=['is_outlier'], inplace=True)
 
-    print(f"Rows removed: {len(z_indices)}")
-    print(f"Rows flagged as outliers: {len(all_outlier_indices)}")
-    print(f"Rows remaining after outlier removal: {len(cleaned_data)}")
+    return cleaned_data
+
+# Step 4: Handle Outliers with Threshold 2
+def handle_outliers_z2(data, columns, dbscan_eps=0.7, dbscan_min_samples=3):
+    z_outliers = detect_outliers_zscore(data, columns, 2)  # Threshold 2
+    dbscan_outliers = detect_outliers_dbscan(data, columns, dbscan_eps, dbscan_min_samples)
+
+    # Combine outliers from both methods
+    z_indices = set(pd.concat(z_outliers.values()).index)
+    dbscan_indices = set(pd.concat(dbscan_outliers.values()).index)
+    all_outlier_indices = z_indices.union(dbscan_indices)
+
+    data['is_outlier'] = data.index.isin(all_outlier_indices)
+    flagged_rows = data[data['is_outlier']].copy()
+    flagged_rows.to_csv('flagged_outliers_z2.csv', index=False)
+
+    # Remove outliers
+    cleaned_data = data[~data.index.isin(z_indices)].copy()
+    cleaned_data.drop(columns=['is_outlier'], inplace=True)
 
     return cleaned_data
 
-# Step 4: Compare Distributions
+# Step 5: Handle Outliers with Threshold 1
+def handle_outliers_z1(data, columns, dbscan_eps=0.7, dbscan_min_samples=3):
+    z_outliers = detect_outliers_zscore(data, columns, 1)  # Threshold 1
+    dbscan_outliers = detect_outliers_dbscan(data, columns, dbscan_eps, dbscan_min_samples)
+
+    # Combine outliers from both methods
+    z_indices = set(pd.concat(z_outliers.values()).index)
+    dbscan_indices = set(pd.concat(dbscan_outliers.values()).index)
+    all_outlier_indices = z_indices.union(dbscan_indices)
+
+    data['is_outlier'] = data.index.isin(all_outlier_indices)
+    flagged_rows = data[data['is_outlier']].copy()
+    flagged_rows.to_csv('flagged_outliers_z1.csv', index=False)
+
+    # Remove outliers
+    cleaned_data = data[~data.index.isin(z_indices)].copy()
+    cleaned_data.drop(columns=['is_outlier'], inplace=True)
+
+    return cleaned_data
+
+# Step 6: Compare Distributions
 def compare_distributions(original_data, cleaned_data, columns):
     for col in columns:
         if col in original_data.columns and col in cleaned_data.columns:
@@ -89,13 +123,17 @@ def compare_distributions(original_data, cleaned_data, columns):
             plt.show()
 
 if __name__ == "__main__":
-    # Handle outliers
-    cleaned_data = handle_outliers(data.copy(), numerical_columns)
+    # Test with Z-Score Threshold 3
+    cleaned_data_z3 = handle_outliers_z3(data.copy(), numerical_columns)
+    compare_distributions(data, cleaned_data_z3, numerical_columns)
+    cleaned_data_z3.to_csv('../../Processed Dataset/dataset_cleaned_03.csv', index=False)
 
-    # Save cleaned dataset
-    cleaned_data_path = '../../Processed Dataset/dataset_cleaned_03.csv'
-    cleaned_data.to_csv(cleaned_data_path, index=False)
+    # Test with Z-Score Threshold 2
+    # cleaned_data_z2 = handle_outliers_z2(data.copy(), numerical_columns)
+    # compare_distributions(data, cleaned_data_z2, numerical_columns)
+    # cleaned_data_z2.to_csv('dataset_cleaned_z2.csv', index=False)
 
-    # Compare distributions before and after
-    compare_distributions(data, cleaned_data, numerical_columns)
-    print(f"Cleaned dataset saved to: {cleaned_data_path}")
+    # Test with Z-Score Threshold 1
+    # cleaned_data_z1 = handle_outliers_z1(data.copy(), numerical_columns)
+    # compare_distributions(data, cleaned_data_z1, numerical_columns)
+    # cleaned_data_z1.to_csv('dataset_cleaned_z1.csv', index=False)
