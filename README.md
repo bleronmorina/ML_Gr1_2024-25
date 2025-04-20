@@ -306,6 +306,44 @@ All predictors are numeric and (after cleaning) have no missing values. We binar
 | Support Vector Machine | 0.980944 |  0.969858 | 0.992740 | 0.981166 | 0.999193 |
 
 ---
+## Confusion Matrices
+
+
+### Logistic Regression
+
+|                  | Pred Low (0) | Pred High (1) |
+|------------------|--------------|---------------|
+| **Actual Low (0)**  | 544          | 7             |
+| **Actual High (1)** | 5            | 546           |
+
+---
+
+### Random Forest
+
+|                  | Pred Low (0) | Pred High (1) |
+|------------------|--------------|---------------|
+| **Actual Low (0)**  | 550          | 1             |
+| **Actual High (1)** | 4            | 547           |
+
+---
+
+### Gradient Boosting
+
+|                  | Pred Low (0) | Pred High (1) |
+|------------------|--------------|---------------|
+| **Actual Low (0)**  | 549          | 2             |
+| **Actual High (1)** | 5            | 546           |
+
+---
+
+### Support Vector Classifier (SVC)
+
+|                  | Pred Low (0) | Pred High (1) |
+|------------------|--------------|---------------|
+| **Actual Low (0)**  | 534          | 17            |
+| **Actual High (1)** | 4            | 547           |
+
+---
 
 ## Discussion
 

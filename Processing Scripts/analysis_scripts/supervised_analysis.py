@@ -4,7 +4,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.svm import SVC
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, confusion_matrix
 
 def main():
 
@@ -45,6 +45,11 @@ def main():
     for name, model in models.items():
         model.fit(X_train, y_train)
         y_pred = model.predict(X_test)
+        cm = confusion_matrix(y_test, y_pred, labels=[0,1])
+        cm_df = pd.DataFrame(cm,
+                     index=['Actual Low (0)', 'Actual High (1)'],
+                     columns=['Pred Low (0)',   'Pred High (1)'])
+        print(f"\nConfusion Matrix for {name}:\n", cm_df, "\n")
         try:
             y_prob = model.predict_proba(X_test)[:, 1]
             auc = roc_auc_score(y_test, y_prob)
