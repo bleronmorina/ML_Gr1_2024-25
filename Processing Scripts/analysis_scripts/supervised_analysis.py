@@ -5,12 +5,9 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.svm import SVC
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
-# Removed roc_auc_score as it's more complex for multi-class direct interpretation here
-# from sklearn.metrics import roc_auc_score
 
 def main():
 
-    # --- Column Selection ---
     potential_target_cols = [
         'DALYs (rate) - Sex: Both - Age: Age-standardized - Cause: Depressive disorders',
         'DALYs (rate) - Sex: Both - Age: Age-standardized - Cause: Schizophrenia',
@@ -39,28 +36,25 @@ def main():
                 print("Invalid choice. Please enter a number within the range.")
         except ValueError:
             print("Invalid input. Please enter a number.")
-    # --- End Column Selection ---
 
     try:
         df = pd.read_csv('Processed Dataset/FinalMerged.csv')
     except FileNotFoundError:
         print("Error: 'Processed Dataset/FinalMerged.csv' not found.")
         print("Please make sure the dataset file is in the correct directory.")
-        return # Exit if file not found
+        return 
 
-    # Check if selected target column exists in the DataFrame
     if target_col not in df.columns:
         print(f"Error: The selected target column '{target_col}' does not exist in the CSV.")
         return
 
-    # Handle potential NaNs in the target column *before* creating bins
     df = df.dropna(subset=[target_col])
     if df.empty:
         print(f"Error: No valid data remaining for the target column '{target_col}' after dropping NaNs.")
         return
 
     # --- Target Variable Creation (5 Levels) ---
-    # Use qcut to create 5 bins (quintiles) based on the target column's distribution
+    # Used qcut to create 5 bins (quintiles) based on the target column's distribution
     # labels=False assigns integers 0 through 4 to the bins
     try:
         df['target'] = pd.qcut(df[target_col], q=5, labels=False, duplicates='drop')
@@ -81,12 +75,11 @@ def main():
     X = df.drop(columns=drop_cols + ['target'])
     X = X.select_dtypes(include=['int64', 'float64'])  # numeric features only
 
-    # Check if any features remain
     if X.shape[1] == 0:
         print("Error: No numeric features left after dropping specified columns.")
         return
 
-    X = X.fillna(X.median())  # simple median imputation for missing values
+    X = X.fillna(X.median()) 
 
     y = df['target']
 
@@ -113,16 +106,15 @@ def main():
 
     # Define models (These models inherently support multi-class)
     models = {
-        'LogisticRegression': LogisticRegression(max_iter=1000, solver='lbfgs'), # 'auto' handles multi-class
+        'LogisticRegression': LogisticRegression(max_iter=1000, solver='lbfgs'), 
         'RandomForest': RandomForestClassifier(n_estimators=100, random_state=42),
         'GradientBoosting': GradientBoostingClassifier(n_estimators=100, random_state=42),
-        # SVC automatically handles multi-class using One-vs-One or One-vs-Rest strategy
-        'SVC': SVC(kernel='rbf', probability=False) # probability=True not needed if not calculating AUC/probs
+        'SVC': SVC(kernel='rbf', probability=False)
     }
 
     # Train, predict, evaluate
     results = []
-    class_labels = sorted(y.unique()) # Get the actual class labels (0, 1, 2, 3, 4)
+    class_labels = sorted(y.unique()) # Here we get the actual class labels (0, 1, 2, 3, 4)
 
     for name, model in models.items():
         print(f"\n--- Training and Evaluating {name} ---")
@@ -137,7 +129,7 @@ def main():
         print(f"\nConfusion Matrix for {name}:\n", cm_df, "\n")
 
         # --- Multi-class Metrics ---
-        # Use 'weighted' average to account for potential class imbalance
+        # Used 'weighted' average to account for potential class imbalance
         accuracy = accuracy_score(y_test, y_pred)
         precision = precision_score(y_test, y_pred, average='weighted', zero_division=0)
         recall = recall_score(y_test, y_pred, average='weighted', zero_division=0)
@@ -149,14 +141,12 @@ def main():
             'Precision (Weighted)': precision,
             'Recall (Weighted)': recall,
             'F1 Score (Weighted)': f1
-            # Removed ROC AUC as it requires more setup/interpretation for multi-class
         })
         print(f"Metrics for {name}: Accuracy={accuracy:.4f}, Precision={precision:.4f}, Recall={recall:.4f}, F1={f1:.4f}")
 
 
     results_df = pd.DataFrame(results)
     print("\n--- Overall Model Performance ---")
-    # Adjust display options for better readability if needed
     pd.set_option('display.max_columns', None)
     pd.set_option('display.width', 1000)
     print(results_df.to_string(index=False))
