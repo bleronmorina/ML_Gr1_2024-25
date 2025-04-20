@@ -200,7 +200,7 @@ if __name__ == "__main__":
         visualize_clusters_and_dimensions(df, pca_components=pca_components, tsne_components=tsne_components, umap_components=umap_components, output_image_path=args.output_image)
         
         # Save the clustered data to CSV
-        df.to_csv('../data_analysis/clustered_and_reduced_data_03csv', index=False)
+        df.to_csv('../data_analysis/clustered_and_reduced_data_03.csv', index=False)
         print(f"Clustered and reduced data saved to 'clustered_and_reduced_data_03.csv'.")
         
         # Plot Silhouette Scores for different number of clusters
