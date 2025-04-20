@@ -302,6 +302,98 @@ around its median into `0 = Low burden` vs. `1 = High burden`, yielding a balanc
 3. **Regression experimentation**  
    – Switch to a continuous target (the raw depression‑share column) and train regressors  
      (e.g. Random Forest Regressor, XGBoost Regressor) for more granular prevalence predictions.
+
+# Unsupervised Algorithms
+
+**Overview**  
+In this phase, we explore unsupervised learning techniques to uncover hidden patterns in the data without relying on labeled outcomes. Our aim is to group countries or observations with similar socioeconomic and mental-health profiles using **clustering algorithms**, and to reduce data dimensionality for effective **visualization** using **PCA**, **t-SNE**, and **UMAP**.
+
+We work with the same preprocessed dataset used in the supervised phase, with all features scaled and encoded, and without any missing values.
+
+---
+
+## Why Use Unsupervised Learning?
+
+- **Clustering** helps identify natural groupings among countries, such as those with similar economic conditions and mental-health burdens.
+- **Dimensionality reduction** aids in visualizing high-dimensional relationships in 2D or 3D plots.
+- It complements supervised learning by revealing structure in the data that may guide feature engineering or hypothesis generation.
+
+---
+
+## Algorithms Used
+
+### 1. K-Means Clustering
+- **What it does:**  
+  Partitions the data into `k` clusters by minimizing intra-cluster variance.
+- **Why we used it:**  
+  - Simple and fast.
+  - Works well when clusters are roughly spherical and similarly sized.
+  - Provides clear, hard cluster assignments.
+
+### 2. DBSCAN (Density-Based Spatial Clustering of Applications with Noise)
+- **What it does:**  
+  Groups data points based on density. Points in low-density regions are labeled as noise.
+- **Why we used it:**  
+  - Can find arbitrarily shaped clusters.
+  - Robust to outliers.
+  - Does not require specifying the number of clusters.
+
+### 3. Agglomerative Hierarchical Clustering
+- **What it does:**  
+  Builds a hierarchy of clusters using a bottom-up approach by repeatedly merging the two closest clusters.
+- **Why we used it:**  
+  - Captures nested structure in the data.
+  - Flexible linkage criteria (e.g. average, complete, single).
+  - Visualizable via dendrograms.
+
+---
+
+## Dimensionality Reduction
+
+### 1. PCA (Principal Component Analysis)
+- **What it does:**  
+  Projects data into orthogonal components that explain maximum variance.
+- **Why we used it:**  
+  - Useful for initial exploratory analysis.
+  - Fast and interpretable.
+  - Can be combined with clustering to visualize groupings.
+
+### 2. t-SNE (t-distributed Stochastic Neighbor Embedding)
+- **What it does:**  
+  Embeds high-dimensional data in lower dimensions by preserving local structure.
+- **Why we used it:**  
+  - Excellent for visualizing complex data.
+  - Reveals subtle structure and clusters not visible with PCA.
+
+### 3. UMAP (Uniform Manifold Approximation and Projection)
+- **What it does:**  
+  Constructs a high-dimensional graph and optimizes its low-dimensional layout.
+- **Why we used it:**  
+  - Balances local and global structure preservation.
+  - Generally faster and more scalable than t-SNE.
+  - Produces more stable and meaningful embeddings.
+
+---
+
+## Visualization and Insights
+
+- Clusters discovered by K-Means and DBSCAN were visualized using PCA, t-SNE, and UMAP.
+- In PCA space, countries with high HDI and low depression burden tended to group together.
+- t-SNE and UMAP uncovered more fine-grained clusters, some of which aligned with geographic regions or income levels.
+- DBSCAN was effective in identifying small, high-density subgroups and labeling noise points.
+
+---
+
+## Next Steps
+
+1. **Cluster Profiling**  
+   – Summarize the characteristics of each cluster by examining median values of socioeconomic and health features.
+
+2. **Temporal Analysis**  
+   – Apply clustering separately by year to track how country groupings change over time.
+
+3. **Use Clusters as Features**  
+   – Feed cluster labels into supervised models to assess if cluster membership improves predictive performance.
   
   
 
