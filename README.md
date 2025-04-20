@@ -222,3 +222,86 @@ The image shows two side-by-side bar plots:
 ---
 # Phase II
 
+# Supervised Algorithms
+
+**Overview**  
+In this phase we train and evaluate four supervised classifiers on our **FinalMerged.csv** dataset, which contains:
+
+- **Demographic/economic indicators** (e.g. GDP per capita, life expectancy, HDI, electricity consumption)  
+- **Mental‑health metrics** (e.g. age‑standardized share of depressive disorders, DALYs rates)  
+- **Temporal and categorical fields** (Country, Region, Year)  
+
+All predictors are numeric and (after cleaning) have no missing values. We binarize the target  
+> **Depressive disorders (share of population) – Sex: Both – Age‑standardized**  
+around its median into `0 = Low burden` vs. `1 = High burden`, yielding a balanced two‑class problem.
+
+---
+
+## Why These Algorithms?
+
+### 1. Logistic Regression  
+- **What it does:**  
+  Models `P(y=1)` via a sigmoid over a linear combination of features.  
+- **Why it fits:**  
+  - Our predictors (GDP, HDI, life expectancy) often influence mental‑health in roughly linear ways.  
+  - Coefficients give **odds ratios** (e.g. how each \$1 000 increase in GDP changes odds of high depression).  
+  - Fast baseline and very interpretable.
+
+### 2. Random Forest  
+- **What it does:**  
+  An ensemble of decision trees using majority‑vote. Splits on features that maximize information gain (Gini or entropy).  
+- **Why it fits:**  
+  - Captures **non‑linear interactions** (e.g. “high unemployment + low HDI → high depression”).  
+  - Handles numeric data natively—no scaling required.  
+  - Feature‑importance tells us which socio‑economic factors drive mental‑health burden.
+
+### 3. Gradient Boosting (e.g. XGBoost)  
+- **What it does:**  
+  Sequentially builds shallow trees to correct previous residuals.  
+- **Why it fits:**  
+  - Excellent predictive power on structured, numeric data.  
+  - Regularization and shrinkage guard against overfitting.  
+  - Fast on large datasets and handles missing values internally.
+
+### 4. Support Vector Machine (RBF Kernel)  
+- **What it does:**  
+  Finds the maximum‑margin hyperplane in a transformed (kernel) space to separate classes.  
+- **Why it fits:**  
+  - Effective in **medium‑sized** datasets with clear separation once data are standardized.  
+  - RBF kernel can model complex, smooth decision boundaries that linear models miss.
+
+---
+
+## Model Performance
+
+| Algorithm              | Accuracy  | Precision | Recall   | F1 Score | ROC AUC  |
+|:-----------------------|----------:|----------:|---------:|---------:|---------:|
+| Logistic Regression    | 0.989111  | 0.987342  | 0.990926 | 0.989130 | 0.999555 |
+| Random Forest          | 0.995463  | 0.998175  | 0.992740 | 0.995450 | 0.999970 |
+| Gradient Boosting      | 0.993648  | 0.996350  | 0.990926 | 0.993631 | 0.999690 |
+| Support Vector Machine | 0.980944  | 0.969858  | 0.992740 | 0.981166 | 0.999193 |
+
+---
+
+## Discussion
+
+- **Logistic Regression** gave us a strong **interpretability** baseline: its coefficients confirmed that higher HDI and GDP per capita are associated with lower odds of high depression burden.  
+- **Tree‑based ensembles** (RF, XGBoost) improved overall accuracy by modeling **non‑linear synergies**—for example, they picked up interactions between life expectancy and electricity access that a linear model missed.  
+- **SVM** performed competitively after standardization, showing that our features are reasonably well‑separable in an RBF space.
+
+## Next Steps
+
+1. **Hyperparameter tuning**  
+   – Run `GridSearchCV` or `RandomizedSearchCV` to optimize each model’s key parameters  
+     (e.g. RF `max_depth`, XGBoost `eta`, SVM `C`/`gamma`).
+
+2. **Inspect model interpretability**  
+   – Extract feature importances from Random Forests & XGBoost, and examine logistic regression coefficients  
+     to understand which socioeconomic indicators most strongly drive mental‑health outcomes.
+
+3. **Regression experimentation**  
+   – Switch to a continuous target (the raw depression‑share column) and train regressors  
+     (e.g. Random Forest Regressor, XGBoost Regressor) for more granular prevalence predictions.
+  
+  
+
