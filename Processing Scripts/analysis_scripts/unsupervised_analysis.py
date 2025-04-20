@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt  # For visualization
 from sklearn.manifold import TSNE
 import umap
 import os
+from sklearn.metrics import silhouette_score, davies_bouldin_score
 
 # Function to load and preprocess data
 def load_and_preprocess_data(file_path):
@@ -36,18 +37,50 @@ def load_and_preprocess_data(file_path):
         print(f"Error during data loading and preprocessing: {e}")
         return None, None
 
-# Perform KMeans clustering
-def perform_kmeans_clustering(df, n_clusters=3):
-    kmeans = KMeans(n_clusters=n_clusters, random_state=42)
-    df['Cluster'] = kmeans.fit_predict(df)
-    print(f"KMeans clustering performed with {n_clusters} clusters.")
-    return df
+# Perform KMeans clustering with different number of clusters
+def perform_kmeans_clustering(df, n_clusters_range=[3, 4, 5, 6]):
+    best_score = -1  # Start with a low score
+    best_n_clusters = n_clusters_range[0]
+    silhouette_scores = []
+    
+    for n_clusters in n_clusters_range:
+        kmeans = KMeans(n_clusters=n_clusters, random_state=42)
+        df['Cluster'] = kmeans.fit_predict(df)
+        print(f"KMeans clustering performed with {n_clusters} clusters.")
+        
+        # Calculate Silhouette Score
+        sil_score = silhouette_score(df.drop('Cluster', axis=1), df['Cluster'])
+        silhouette_scores.append(sil_score)
+        print(f"Silhouette Score for {n_clusters} clusters: {sil_score}")
+        
+        # Keep track of the best score and number of clusters
+        if sil_score > best_score:
+            best_score = sil_score
+            best_n_clusters = n_clusters
+    
+    print(f"\nBest Silhouette Score is {best_score} with {best_n_clusters} clusters.")
+    return df, silhouette_scores, n_clusters_range
 
 # Perform DBSCAN clustering
 def perform_dbscan_clustering(df, eps=0.5, min_samples=5):
     dbscan = DBSCAN(eps=eps, min_samples=min_samples)
     df['Cluster'] = dbscan.fit_predict(df)
     print(f"DBSCAN clustering performed with eps={eps}, min_samples={min_samples}.")
+
+    # Filter out noise points (those with cluster label -1)
+    valid_points = df[df['Cluster'] != -1]
+    
+    # Calculate Silhouette Score (using only valid points)
+    if len(valid_points) > 1:  # Ensure there are at least 2 clusters for Silhouette score
+        sil_score = silhouette_score(valid_points.drop('Cluster', axis=1), valid_points['Cluster'])
+        print(f"Silhouette Score: {sil_score}")
+    else:
+        print("Silhouette Score: Cannot be computed due to lack of valid clusters.")
+
+    # Calculate Davies-Bouldin Score
+    db_score = davies_bouldin_score(valid_points.drop('Cluster', axis=1), valid_points['Cluster'])
+    print(f"Davies-Bouldin Score: {db_score}")
+    
     return df
 
 # Perform Agglomerative clustering
@@ -55,6 +88,15 @@ def perform_agglomerative_clustering(df, n_clusters=3):
     agglomerative = AgglomerativeClustering(n_clusters=n_clusters)
     df['Cluster'] = agglomerative.fit_predict(df)
     print(f"Agglomerative clustering performed with {n_clusters} clusters.")
+
+    # Calculate Silhouette Score
+    sil_score = silhouette_score(df.drop('Cluster', axis=1), df['Cluster'])
+    print(f"Silhouette Score: {sil_score}")
+
+    # Calculate Davies-Bouldin Score
+    db_score = davies_bouldin_score(df.drop('Cluster', axis=1), df['Cluster'])
+    print(f"Davies-Bouldin Score: {db_score}")
+
     return df
 
 # Perform PCA for dimensionality reduction
@@ -88,28 +130,39 @@ def visualize_clusters_and_dimensions(df, pca_components=None, tsne_components=N
         plt.title('PCA of Data with Clustering')
         plt.xlabel('Principal Component 1')
         plt.ylabel('Principal Component 2')
-    elif tsne_components is not None:
+        if output_image_path:
+            plt.savefig(f"../data_analysis/{output_image_path}_pca3.png")
+            print(f"Plot saved to ../data_analysis/{output_image_path}_pca.png")
+    
+    if tsne_components is not None:
         plt.scatter(tsne_components[:, 0], tsne_components[:, 1], c=df['Cluster'], cmap='viridis', label='Data Points (t-SNE)')
         plt.colorbar(label='Cluster')
         plt.title('t-SNE of Data with Clustering')
         plt.xlabel('t-SNE Component 1')
         plt.ylabel('t-SNE Component 2')
-    elif umap_components is not None:
+        if output_image_path:
+            plt.savefig(f"../data_analysis/{output_image_path}_tsne3.png")
+            print(f"Plot saved to {output_image_path}_tsne.png")
+    
+    if umap_components is not None:
         plt.scatter(umap_components[:, 0], umap_components[:, 1], c=df['Cluster'], cmap='viridis', label='Data Points (UMAP)')
         plt.colorbar(label='Cluster')
         plt.title('UMAP of Data with Clustering')
         plt.xlabel('UMAP Component 1')
         plt.ylabel('UMAP Component 2')
-
-    # Save the plot image
-    if output_image_path:
-        # Ensure the directory exists
-        os.makedirs(os.path.dirname(output_image_path), exist_ok=True)
-        
-        # Save the plot as PNG
-        plt.savefig(output_image_path)
-        print(f"Plot saved to {output_image_path}")
+        if output_image_path:
+            plt.savefig(f"../data_analysis/{output_image_path}_umap3.png")
+            print(f"Plot saved to /{output_image_path}_umap.png")
     
+    plt.show()
+
+# Plot Silhouette Scores for different number of clusters
+def plot_silhouette_scores(n_clusters_range, silhouette_scores):
+    plt.figure(figsize=(8, 6))
+    plt.plot(n_clusters_range, silhouette_scores, marker='o', linestyle='-', color='b')
+    plt.title('Silhouette Score vs. Number of Clusters')
+    plt.xlabel('Number of Clusters')
+    plt.ylabel('Silhouette Score')
     plt.show()
 
 
@@ -119,7 +172,7 @@ if __name__ == "__main__":
     parser.add_argument("file_path", type=str, help="Path to the input file (CSV or Excel) containing data.")
     parser.add_argument("--n_clusters", type=int, default=3, help="Number of clusters for KMeans and Agglomerative.")
     parser.add_argument("--n_components", type=int, default=2, help="Number of components for PCA, t-SNE, or UMAP.")
-    parser.add_argument("--output_image", type=str, default="pca_clusters_plot.png", help="Path to save the plot image.")
+    parser.add_argument("--output_image", type=str, default="pca_clusters_plot", help="Path to save the plot image.")
     parser.add_argument("--clustering_method", type=str, choices=['kmeans', 'dbscan', 'agglomerative'], default='kmeans', help="Clustering method to use.")
     parser.add_argument("--eps", type=float, default=0.5, help="Epsilon for DBSCAN.")
     parser.add_argument("--min_samples", type=int, default=5, help="Minimum samples for DBSCAN.")
@@ -132,7 +185,7 @@ if __name__ == "__main__":
     if df is not None:
         # Perform clustering based on selected method
         if args.clustering_method == 'kmeans':
-            df = perform_kmeans_clustering(df, n_clusters=args.n_clusters)
+            df, silhouette_scores, n_clusters_range = perform_kmeans_clustering(df, n_clusters_range=[3, 4, 5, 6])
         elif args.clustering_method == 'dbscan':
             df = perform_dbscan_clustering(df, eps=args.eps, min_samples=args.min_samples)
         elif args.clustering_method == 'agglomerative':
@@ -147,5 +200,9 @@ if __name__ == "__main__":
         visualize_clusters_and_dimensions(df, pca_components=pca_components, tsne_components=tsne_components, umap_components=umap_components, output_image_path=args.output_image)
         
         # Save the clustered data to CSV
-        df.to_csv('../data_analysis/clustered_and_reduced_data_02.csv', index=False)
-        print(f"Clustered and reduced data saved to 'clustered_and_reduced_data_02.csv'.")
+        df.to_csv('../data_analysis/clustered_and_reduced_data_03csv', index=False)
+        print(f"Clustered and reduced data saved to 'clustered_and_reduced_data_03.csv'.")
+        
+        # Plot Silhouette Scores for different number of clusters
+        if args.clustering_method == 'kmeans':
+            plot_silhouette_scores(n_clusters_range, silhouette_scores)
