@@ -240,8 +240,7 @@ The image shows two side-by-side bar plots:
 ---
 
 # Phase II
-
-Okay, here's the updated Markdown README section, filled in with the results from your script run using **'Schizophrenia disorders (share of population) - Sex: Both - Age: Age-standardized'** as the target variable.
+In Phase II, we implemented and evaluated four supervised machine learning algorithms—Logistic Regression, Random Forest, Gradient Boosting, and SVM with RBF kernel—to classify countries into five levels based on the share of schizophrenia disorders. The continuous target variable was discretized into quintiles to represent severity levels. After preprocessing and scaling the data, models were trained and compared using accuracy, precision, recall, F1-score, and confusion matrices. Tree-based models (Random Forest and Gradient Boosting) outperformed the others, indicating complex non-linear interactions among predictors.
 
 ---
 
