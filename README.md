@@ -531,3 +531,10 @@ The plot below shows the Silhouette Score as a function of the number of cluster
 
 # Phase III
 In this phase, we train and evaluate four supervised classifiers on our **FinalMerged.csv** dataset. The goal is to classify countries/years into multiple levels (typically 5, from very low to very high) based on a user-selected mental health indicator.
+
+## Objectives
+
+- **Optimize Model Performance:** Improve the performance of the existing models (Logistic Regression, Random Forest, Gradient Boosting, and SVM).
+- **Reduce Overfitting/Underfitting:** Ensure the models generalize well to unseen data by applying regularization and selecting appropriate hyperparameters.
+- **Improve Interpretability:** Enhance model transparency to better understand which features are influencing predictions.
+- **Ensemble Models:** Explore techniques like model stacking or bagging to combine multiple models for improved performance.
