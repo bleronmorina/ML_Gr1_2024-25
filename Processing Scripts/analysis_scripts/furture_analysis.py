@@ -64,6 +64,8 @@ def evaluate_model(model, X_test, y_test):
     print("Model Evaluation:")
     print(f"Mean Squared Error: {mse:.4f}")
     print(f"R-squared: {r2:.4f}")
+    print(f"F-squared: {r3:.4f}")
+
     return mse, r2
 
 def save_model_and_scaler(model, scaler, model_filename="trained_model.joblib", scaler_filename="scaler.joblib"):
