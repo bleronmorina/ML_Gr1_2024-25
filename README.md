@@ -528,3 +528,6 @@ The plot below shows the Silhouette Score as a function of the number of cluster
 
 3. **Use Clusters as Features**  
    – Feed cluster labels into supervised models to assess if cluster membership improves predictive performance.
+
+# Phase III
+In this phase, we train and evaluate four supervised classifiers on our **FinalMerged.csv** dataset. The goal is to classify countries/years into multiple levels (typically 5, from very low to very high) based on a user-selected mental health indicator.
