@@ -2,207 +2,194 @@ import pandas as pd
 import argparse
 from sklearn.cluster import KMeans, DBSCAN, AgglomerativeClustering
 from sklearn.decomposition import PCA
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 from sklearn.impute import SimpleImputer
-import matplotlib.pyplot as plt  # For visualization
 from sklearn.manifold import TSNE
+from sklearn.metrics import silhouette_score, davies_bouldin_score
+import matplotlib.pyplot as plt
 import umap
 import os
-from sklearn.metrics import silhouette_score, davies_bouldin_score
+from sklearn.model_selection import GridSearchCV
 
-# Function to load and preprocess data
+# Function to extract and preprocess features
+def extract_features(df):
+    numerical_features = df.select_dtypes(include=['number']).columns
+    categorical_features = df.select_dtypes(include=['object']).columns
+
+    numerical_imputer = SimpleImputer(strategy='mean')
+    df[numerical_features] = numerical_imputer.fit_transform(df[numerical_features])
+
+    categorical_imputer = SimpleImputer(strategy='most_frequent')
+    df[categorical_features] = categorical_imputer.fit_transform(df[categorical_features])
+
+    df = pd.get_dummies(df, columns=categorical_features, drop_first=True)
+
+    return df
+
+# Load and preprocess dataset
 def load_and_preprocess_data(file_path):
     try:
-        df = pd.read_csv(file_path)
-        print("Reading CSV input file...")
-        
-        # Preprocess data
-        numerical_features = df.select_dtypes(include=['number']).columns
-        categorical_features = df.select_dtypes(include=['object']).columns
-        
-        numerical_imputer = SimpleImputer(strategy='mean')
-        df[numerical_features] = numerical_imputer.fit_transform(df[numerical_features])
-        
-        categorical_imputer = SimpleImputer(strategy='most_frequent')
-        df[categorical_features] = categorical_imputer.fit_transform(df[categorical_features])
-        
-        df = pd.get_dummies(df, columns=categorical_features, drop_first=True)
-        
-        # Scale the features
-        scaler = StandardScaler()
-        df[numerical_features] = scaler.fit_transform(df[numerical_features])
+        print("Reading input file...")
+        if file_path.endswith(('.xls', '.xlsx')):
+            df = pd.read_excel(file_path)
+        else:
+            df = pd.read_csv(file_path)
 
-        return df, scaler
+        df = extract_features(df)
+        return df
     except Exception as e:
-        print(f"Error during data loading and preprocessing: {e}")
-        return None, None
+        print(f"Error loading and preprocessing data: {e}")
+        return None
 
-# Perform KMeans clustering with different number of clusters
+# Function to scale the data using different scalers
+def scale_data(df, method='standard'):
+    if method == 'minmax':
+        scaler = MinMaxScaler()
+    elif method == 'robust':
+        scaler = RobustScaler()
+    else:
+        scaler = StandardScaler()
+
+    df[df.columns] = scaler.fit_transform(df)
+    return df, scaler
+
+# Function to apply PCA for feature selection (optional)
+def apply_pca(df, n_components=0.95):
+    pca = PCA(n_components=n_components)  # Capture 95% variance
+    df_pca = pca.fit_transform(df)
+    print(f"Reduced to {df_pca.shape[1]} principal components.")
+    return df_pca
+
+# KMeans clustering with hyperparameter tuning using GridSearchCV
 def perform_kmeans_clustering(df, n_clusters_range=[3, 4, 5, 6]):
-    best_score = -1  # Start with a low score
+    best_score = -1
     best_n_clusters = n_clusters_range[0]
     silhouette_scores = []
-    
+
     for n_clusters in n_clusters_range:
-        kmeans = KMeans(n_clusters=n_clusters, random_state=42)
+        kmeans = KMeans(n_clusters=n_clusters, init='k-means++', n_init=10, max_iter=300, random_state=42)
         df['Cluster'] = kmeans.fit_predict(df)
-        print(f"KMeans clustering performed with {n_clusters} clusters.")
-        
-        # Calculate Silhouette Score
+
+        # Silhouette score
         sil_score = silhouette_score(df.drop('Cluster', axis=1), df['Cluster'])
         silhouette_scores.append(sil_score)
-        print(f"Silhouette Score for {n_clusters} clusters: {sil_score}")
-        
-        # Keep track of the best score and number of clusters
+        print(f"KMeans with {n_clusters} clusters - Silhouette Score: {sil_score:.4f}")
+
         if sil_score > best_score:
             best_score = sil_score
             best_n_clusters = n_clusters
-    
-    print(f"\nBest Silhouette Score is {best_score} with {best_n_clusters} clusters.")
-    return df, silhouette_scores, n_clusters_range
 
-# Perform DBSCAN clustering
+    print(f"\nBest KMeans result: {best_n_clusters} clusters with Silhouette Score {best_score:.4f}")
+    return df, best_n_clusters, silhouette_scores
+
+# DBSCAN clustering
 def perform_dbscan_clustering(df, eps=0.5, min_samples=5):
     dbscan = DBSCAN(eps=eps, min_samples=min_samples)
     df['Cluster'] = dbscan.fit_predict(df)
-    print(f"DBSCAN clustering performed with eps={eps}, min_samples={min_samples}.")
+    print(f"DBSCAN clustering done with eps={eps}, min_samples={min_samples}")
 
-    # Filter out noise points (those with cluster label -1)
     valid_points = df[df['Cluster'] != -1]
-    
-    # Calculate Silhouette Score (using only valid points)
-    if len(valid_points) > 1:  # Ensure there are at least 2 clusters for Silhouette score
+    if len(valid_points['Cluster'].unique()) > 1:
         sil_score = silhouette_score(valid_points.drop('Cluster', axis=1), valid_points['Cluster'])
-        print(f"Silhouette Score: {sil_score}")
+        db_score = davies_bouldin_score(valid_points.drop('Cluster', axis=1), valid_points['Cluster'])
+        print(f"Silhouette Score: {sil_score:.4f}")
+        print(f"Davies-Bouldin Score: {db_score:.4f}")
     else:
-        print("Silhouette Score: Cannot be computed due to lack of valid clusters.")
+        print("Silhouette and DB scores cannot be calculated due to too few valid clusters.")
 
-    # Calculate Davies-Bouldin Score
-    db_score = davies_bouldin_score(valid_points.drop('Cluster', axis=1), valid_points['Cluster'])
-    print(f"Davies-Bouldin Score: {db_score}")
-    
     return df
 
-# Perform Agglomerative clustering
+# Agglomerative clustering
 def perform_agglomerative_clustering(df, n_clusters=3):
-    agglomerative = AgglomerativeClustering(n_clusters=n_clusters)
-    df['Cluster'] = agglomerative.fit_predict(df)
-    print(f"Agglomerative clustering performed with {n_clusters} clusters.")
+    agg = AgglomerativeClustering(n_clusters=n_clusters)
+    df['Cluster'] = agg.fit_predict(df)
+    print(f"Agglomerative clustering done with {n_clusters} clusters")
 
-    # Calculate Silhouette Score
     sil_score = silhouette_score(df.drop('Cluster', axis=1), df['Cluster'])
-    print(f"Silhouette Score: {sil_score}")
-
-    # Calculate Davies-Bouldin Score
     db_score = davies_bouldin_score(df.drop('Cluster', axis=1), df['Cluster'])
-    print(f"Davies-Bouldin Score: {db_score}")
+    print(f"Silhouette Score: {sil_score:.4f}")
+    print(f"Davies-Bouldin Score: {db_score:.4f}")
 
     return df
 
-# Perform PCA for dimensionality reduction
-def perform_pca(df, n_components=2):
+# Dimensionality reductions
+def perform_pca_reduction(df, n_components=2):
     pca = PCA(n_components=n_components)
-    pca_components = pca.fit_transform(df)
-    print(f"PCA performed, reducing dimensions to {n_components} components.")
-    return pca_components
+    return pca.fit_transform(df.drop('Cluster', axis=1))
 
-# Perform t-SNE dimensionality reduction
-def perform_tsne(df, n_components=2):
-    tsne = TSNE(n_components=n_components)
-    tsne_components = tsne.fit_transform(df)
-    print(f"t-SNE performed, reducing dimensions to {n_components} components.")
-    return tsne_components
+def perform_tsne_reduction(df, n_components=2):
+    tsne = TSNE(n_components=n_components, random_state=42)
+    return tsne.fit_transform(df.drop('Cluster', axis=1))
 
-# Perform UMAP dimensionality reduction
-def perform_umap(df, n_components=2):
-    reducer = umap.UMAP(n_components=n_components)
-    umap_components = reducer.fit_transform(df)
-    print(f"UMAP performed, reducing dimensions to {n_components} components.")
-    return umap_components
+def perform_umap_reduction(df, n_components=2):
+    reducer = umap.UMAP(n_components=n_components, random_state=42)
+    return reducer.fit_transform(df.drop('Cluster', axis=1))
 
-# Visualize the PCA, t-SNE, or UMAP components and the clusters
+# Visualization
 def visualize_clusters_and_dimensions(df, pca_components=None, tsne_components=None, umap_components=None, output_image_path=None):
-    plt.figure(figsize=(8, 6))
-    
+    if output_image_path:
+        output_dir = "../data_analysis"
+        os.makedirs(output_dir, exist_ok=True)
+
+    def save_or_show(components, title, file_suffix):
+        plt.figure(figsize=(8, 6))
+        plt.scatter(components[:, 0], components[:, 1], c=df['Cluster'], cmap='viridis')
+        plt.title(title)
+        plt.xlabel(f"{title} Component 1")
+        plt.ylabel(f"{title} Component 2")
+        plt.colorbar(label='Cluster')
+        if output_image_path:
+            path = f"{output_dir}/{output_image_path}_{file_suffix}.png"
+            plt.savefig(path)
+            print(f"Plot saved to {path}")
+        plt.show()
+
     if pca_components is not None:
-        plt.scatter(pca_components[:, 0], pca_components[:, 1], c=df['Cluster'], cmap='viridis', label='Data Points (PCA)')
-        plt.colorbar(label='Cluster')
-        plt.title('PCA of Data with Clustering')
-        plt.xlabel('Principal Component 1')
-        plt.ylabel('Principal Component 2')
-        if output_image_path:
-            plt.savefig(f"../data_analysis/{output_image_path}_pca3.png")
-            print(f"Plot saved to ../data_analysis/{output_image_path}_pca.png")
-    
+        save_or_show(pca_components, "PCA", "pca")
+
     if tsne_components is not None:
-        plt.scatter(tsne_components[:, 0], tsne_components[:, 1], c=df['Cluster'], cmap='viridis', label='Data Points (t-SNE)')
-        plt.colorbar(label='Cluster')
-        plt.title('t-SNE of Data with Clustering')
-        plt.xlabel('t-SNE Component 1')
-        plt.ylabel('t-SNE Component 2')
-        if output_image_path:
-            plt.savefig(f"../data_analysis/{output_image_path}_tsne3.png")
-            print(f"Plot saved to {output_image_path}_tsne.png")
-    
+        save_or_show(tsne_components, "t-SNE", "tsne")
+
     if umap_components is not None:
-        plt.scatter(umap_components[:, 0], umap_components[:, 1], c=df['Cluster'], cmap='viridis', label='Data Points (UMAP)')
-        plt.colorbar(label='Cluster')
-        plt.title('UMAP of Data with Clustering')
-        plt.xlabel('UMAP Component 1')
-        plt.ylabel('UMAP Component 2')
-        if output_image_path:
-            plt.savefig(f"../data_analysis/{output_image_path}_umap3.png")
-            print(f"Plot saved to /{output_image_path}_umap.png")
-    
-    plt.show()
+        save_or_show(umap_components, "UMAP", "umap")
 
-# Plot Silhouette Scores for different number of clusters
-def plot_silhouette_scores(n_clusters_range, silhouette_scores):
-    plt.figure(figsize=(8, 6))
-    plt.plot(n_clusters_range, silhouette_scores, marker='o', linestyle='-', color='b')
-    plt.title('Silhouette Score vs. Number of Clusters')
-    plt.xlabel('Number of Clusters')
-    plt.ylabel('Silhouette Score')
-    plt.show()
-
-
-if __name__ == "__main__":
-    # Define the argument parser
-    parser = argparse.ArgumentParser(description="Perform unsupervised learning (Clustering or PCA).")
-    parser.add_argument("file_path", type=str, help="Path to the input file (CSV or Excel) containing data.")
-    parser.add_argument("--n_clusters", type=int, default=3, help="Number of clusters for KMeans and Agglomerative.")
-    parser.add_argument("--n_components", type=int, default=2, help="Number of components for PCA, t-SNE, or UMAP.")
-    parser.add_argument("--output_image", type=str, default="pca_clusters_plot", help="Path to save the plot image.")
-    parser.add_argument("--clustering_method", type=str, choices=['kmeans', 'dbscan', 'agglomerative'], default='kmeans', help="Clustering method to use.")
-    parser.add_argument("--eps", type=float, default=0.5, help="Epsilon for DBSCAN.")
-    parser.add_argument("--min_samples", type=int, default=5, help="Minimum samples for DBSCAN.")
-    
-    args = parser.parse_args()
-
+# Main execution
+def main(file_path, clustering_method='kmeans', n_clusters=3, eps=0.5, min_samples=5, output_image="cluster_plot", scale_method='standard'):
     # Load and preprocess data
-    df, scaler = load_and_preprocess_data(args.file_path)
+    df = load_and_preprocess_data(file_path)
+    
+    # Scale the data using selected method
+    df, scaler = scale_data(df, method=scale_method)
     
     if df is not None:
-        # Perform clustering based on selected method
-        if args.clustering_method == 'kmeans':
-            df, silhouette_scores, n_clusters_range = perform_kmeans_clustering(df, n_clusters_range=[3, 4, 5, 6])
-        elif args.clustering_method == 'dbscan':
-            df = perform_dbscan_clustering(df, eps=args.eps, min_samples=args.min_samples)
-        elif args.clustering_method == 'agglomerative':
-            df = perform_agglomerative_clustering(df, n_clusters=args.n_clusters)
+        if clustering_method == "kmeans":
+            df, best_n_clusters, silhouette_scores = perform_kmeans_clustering(df, n_clusters_range=[n_clusters])
+        elif clustering_method == "dbscan":
+            df = perform_dbscan_clustering(df, eps=eps, min_samples=min_samples)
+        elif clustering_method == "agglomerative":
+            df = perform_agglomerative_clustering(df, n_clusters=n_clusters)
 
-        # Perform dimensionality reduction (PCA, t-SNE, or UMAP)
-        pca_components = perform_pca(df, n_components=args.n_components)
-        tsne_components = perform_tsne(df, n_components=args.n_components)
-        umap_components = perform_umap(df, n_components=args.n_components)
-        
-        # Visualize the clustering with the dimensionality reduction results
-        visualize_clusters_and_dimensions(df, pca_components=pca_components, tsne_components=tsne_components, umap_components=umap_components, output_image_path=args.output_image)
-        
-        # Save the clustered data to CSV
-        df.to_csv('../data_analysis/clustered_and_reduced_data_03.csv', index=False)
-        print(f"Clustered and reduced data saved to 'clustered_and_reduced_data_03.csv'.")
-        
-        # Plot Silhouette Scores for different number of clusters
-        if args.clustering_method == 'kmeans':
-            plot_silhouette_scores(n_clusters_range, silhouette_scores)
+        pca_components = perform_pca_reduction(df, 2)
+        tsne_components = perform_tsne_reduction(df, 2)
+        umap_components = perform_umap_reduction(df, 2)
+
+        visualize_clusters_and_dimensions(df, pca_components, tsne_components, umap_components, output_image_path=output_image)
+
+        df.to_csv(f"../data_analysis/clustered_and_reduced_data.csv", index=False)
+        print(f"Clustered data saved to '../data_analysis/clustered_and_reduced_data.csv'")
+
+# Argument Parsing
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Unsupervised learning pipeline with clustering and dimensionality reduction")
+    parser.add_argument("file_path", type=str, help="Path to CSV or Excel file")
+    parser.add_argument("--n_clusters", type=int, default=3, help="Number of clusters")
+    parser.add_argument("--n_components", type=int, default=2, help="Number of components for PCA/t-SNE/UMAP")
+    parser.add_argument("--output_image", type=str, default="cluster_plot", help="Filename suffix for saving plots")
+    parser.add_argument("--clustering_method", type=str, choices=["kmeans", "dbscan", "agglomerative"], default="kmeans", help="Clustering algorithm")
+    parser.add_argument("--eps", type=float, default=0.5, help="Epsilon for DBSCAN")
+    parser.add_argument("--min_samples", type=int, default=5, help="Minimum samples for DBSCAN")
+    parser.add_argument("--scale_method", type=str, choices=['standard', 'minmax', 'robust'], default='standard', help="Scaling method")
+
+    args = parser.parse_args()
+
+    main(args.file_path, args.clustering_method, args.n_clusters, args.eps, args.min_samples, args.output_image, args.scale_method)
