@@ -14,6 +14,16 @@ def load_model_and_scaler(model_path, scaler_path):
         print(f"Error loading model or scaler: {e}")
         return None, None
 
+def load_model_and_scaler_version2(model_path, scaler_path):
+    try:
+        model = joblib.load(model_path).getFeatures()
+        scaler = joblib.load(scaler_path).getFeatures()
+        print("Model and scaler loaded successfully.")
+        return model, scaler
+    except Exception as e:
+        print(f"Error loading model or scaler: {e}")
+        return None, None
+
 def preprocess_input_data(file_path, scaler):
     try:
         if file_path.endswith('.csv'):
