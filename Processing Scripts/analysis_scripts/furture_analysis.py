@@ -57,6 +57,20 @@ def train_model(X_train, y_train, model_type='random_forest'):
     print(f"Trained {model_type} model.")
     return model
 
+def compare_models(X_train, y_train, X_test, y_test):
+    """
+    Trains and evaluates both RandomForestRegressor and GradientBoostingRegressor models,
+    and returns their evaluation metrics for comparison.
+    """
+    results = {}
+
+    for model_type in ['random_forest', 'gradient_boosting']:
+        model = train_model(X_train, y_train, model_type=model_type)
+        mse, r2 = evaluate_model(model, X_test, y_test)
+        results[model_type] = {'MSE': mse, 'R2': r2}
+
+    return results
+
 def evaluate_model(model, X_test, y_test):
     y_pred = model.predict(X_test)
     mse = mean_squared_error(y_test, y_pred)
