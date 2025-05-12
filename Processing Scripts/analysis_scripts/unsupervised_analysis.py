@@ -53,14 +53,7 @@ def scale_data(df, method='standard'):
     df[df.columns] = scaler.fit_transform(df)
     return df, scaler
 
-# Function to apply PCA for feature selection (optional)
-def apply_pca(df, n_components=0.95):
-    pca = PCA(n_components=n_components)  # Capture 95% variance
-    df_pca = pca.fit_transform(df)
-    print(f"Reduced to {df_pca.shape[1]} principal components.")
-    return df_pca
-
-# KMeans clustering with hyperparameter tuning using GridSearchCV
+# KMeans clustering with hyperparameter tuning
 def perform_kmeans_clustering(df, n_clusters_range=[3, 4, 5, 6]):
     best_score = -1
     best_n_clusters = n_clusters_range[0]
@@ -70,7 +63,6 @@ def perform_kmeans_clustering(df, n_clusters_range=[3, 4, 5, 6]):
         kmeans = KMeans(n_clusters=n_clusters, init='k-means++', n_init=10, max_iter=300, random_state=42)
         df['Cluster'] = kmeans.fit_predict(df)
 
-        # Silhouette score
         sil_score = silhouette_score(df.drop('Cluster', axis=1), df['Cluster'])
         silhouette_scores.append(sil_score)
         print(f"KMeans with {n_clusters} clusters - Silhouette Score: {sil_score:.4f}")
@@ -125,6 +117,29 @@ def perform_umap_reduction(df, n_components=2):
     reducer = umap.UMAP(n_components=n_components, random_state=42)
     return reducer.fit_transform(df.drop('Cluster', axis=1))
 
+# New improvement: Ensure consistent colors and cluster labeling
+def ensure_consistent_clusters(df, components):
+    """
+    Ensure that the cluster labels are consistent by assigning colors to clusters.
+    """
+    if 'Cluster' in df.columns:
+        unique_clusters = df['Cluster'].unique()
+        color_map = plt.cm.get_cmap('viridis', len(unique_clusters))
+
+        plt.figure(figsize=(8, 6))
+        for i, cluster in enumerate(unique_clusters):
+            cluster_data = components[df['Cluster'] == cluster]
+            plt.scatter(cluster_data[:, 0], cluster_data[:, 1], color=color_map(i), label=f"Cluster {cluster}")
+
+        plt.title('Clustered Data Visualization with Consistent Colors')
+        plt.xlabel('Component 1')
+        plt.ylabel('Component 2')
+        plt.legend()
+        plt.show()
+
+    else:
+        print("No cluster labels found to visualize.")
+
 # Visualization
 def visualize_clusters_and_dimensions(df, pca_components=None, tsne_components=None, umap_components=None, output_image_path=None):
     if output_image_path:
@@ -174,6 +189,7 @@ def main(file_path, clustering_method='kmeans', n_clusters=3, eps=0.5, min_sampl
         umap_components = perform_umap_reduction(df, 2)
 
         visualize_clusters_and_dimensions(df, pca_components, tsne_components, umap_components, output_image_path=output_image)
+        ensure_consistent_clusters(df, pca_components)  # Ensures clusters are visualized consistently
 
         df.to_csv(f"../data_analysis/clustered_and_reduced_data.csv", index=False)
         print(f"Clustered data saved to '../data_analysis/clustered_and_reduced_data.csv'")
