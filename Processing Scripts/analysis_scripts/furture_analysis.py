@@ -91,6 +91,14 @@ def save_model_and_scaler(model, scaler, model_filename="trained_model.joblib", 
     except Exception as e:
         print(f"Error saving model and scaler: {e}")
 
+def calculate_rmse(y_true, y_pred):
+    """
+    Calculates the Root Mean Squared Error (RMSE).
+    """
+    from sklearn.metrics import mean_squared_error
+    rmse = mean_squared_error(y_true, y_pred, squared=False)
+    return rmse
+
 def plot_feature_importance(model, feature_names, top_n=10):
     """
     Plots the top N most important features from a tree-based model.
