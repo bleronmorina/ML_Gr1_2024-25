@@ -78,7 +78,7 @@ def evaluate_model(model, X_test, y_test):
     print("Model Evaluation:")
     print(f"Mean Squared Error: {mse:.4f}")
     print(f"R-squared: {r2:.4f}")
-    print(f"F-squared: {r3:.4f}")
+    print(f"F-squared: {r2:.4f}")
 
     return mse, r2
 
@@ -98,6 +98,26 @@ def calculate_rmse(y_true, y_pred):
     from sklearn.metrics import mean_squared_error
     rmse = mean_squared_error(y_true, y_pred, squared=False)
     return rmse
+
+def compare_models_with_rmse(X_train, y_train, X_test, y_test):
+    """
+    Trains and evaluates both RandomForestRegressor and GradientBoostingRegressor models,
+    and returns their evaluation metrics for comparison, including RMSE.
+    """
+    results = {}
+
+    for model_type in ['random_forest', 'gradient_boosting']:
+        model = train_model(X_train, y_train, model_type=model_type)
+        mse, r2 = evaluate_model(model, X_test, y_test)
+        
+        # Calculate RMSE
+        y_pred = model.predict(X_test)
+        rmse = calculate_rmse(y_test, y_pred)
+
+        results[model_type] = {'MSE': mse, 'R2': r2, 'RMSE': rmse}
+
+    return results
+
 
 def plot_feature_importance(model, feature_names, top_n=10):
     """
@@ -140,15 +160,21 @@ if __name__ == "__main__":
     parser.add_argument("--output_scaler", type=str, default="scaler.joblib",
                         help="Filename for saving the scaler.")
     args = parser.parse_args()
+    
 
     X, y, scaler = load_and_preprocess_data(args.file_path, args.target_column)
-
     if X is not None and y is not None:
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=args.test_size, random_state=args.random_seed)
 
-        model = train_model(X_train, y_train, args.model_type)
+        # Call the new model comparison function
+        comparison_results = compare_models_with_rmse(X_train, y_train, X_test, y_test)
+        print("Model Comparison Results:")
+        print(comparison_results)
 
-        if model:
-            evaluate_model(model, X_test, y_test)
+        # Choose the model for further processing (you can select the best based on the results)
+        best_model_type = 'random_forest' if comparison_results['random_forest']['RMSE'] < comparison_results['gradient_boosting']['RMSE'] else 'gradient_boosting'
+        model = train_model(X_train, y_train, best_model_type)
 
-            save_model_and_scaler(model, scaler, args.output_model, args.output_scaler)
+        # Evaluate and save the best model
+        mse, r2 = evaluate_model(model, X_test, y_test)
+        save_model_and_scaler(model, scaler, args.output_model, args.output_scaler)
