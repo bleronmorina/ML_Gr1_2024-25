@@ -99,6 +99,14 @@ def calculate_rmse(y_true, y_pred):
     rmse = mean_squared_error(y_true, y_pred, squared=False)
     return rmse
 
+def test_data(y_true, y_pred):
+    """
+    Testing data.
+    """
+    from sklearn.metrics import test_data
+    coef = training(y_true, y_pred, squared=False)
+    return coef
+
 def compare_models_with_rmse(X_train, y_train, X_test, y_test):
     """
     Trains and evaluates both RandomForestRegressor and GradientBoostingRegressor models,
