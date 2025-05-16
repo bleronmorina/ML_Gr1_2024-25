@@ -5,53 +5,100 @@ from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 from sklearn.impute import SimpleImputer
 from sklearn.manifold import TSNE
-from sklearn.metrics import silhouette_score, davies_bouldin_score
-import matplotlib.pyplot as plt
 import umap
 import os
-from sklearn.model_selection import GridSearchCV
+import matplotlib.pyplot as plt
+from sklearn.metrics import silhouette_score, davies_bouldin_score
+import seaborn as sns
 
 # Function to extract and preprocess features
 def extract_features(df):
     numerical_features = df.select_dtypes(include=['number']).columns
     categorical_features = df.select_dtypes(include=['object']).columns
 
+    # Handle missing data
     numerical_imputer = SimpleImputer(strategy='mean')
     df[numerical_features] = numerical_imputer.fit_transform(df[numerical_features])
 
     categorical_imputer = SimpleImputer(strategy='most_frequent')
     df[categorical_features] = categorical_imputer.fit_transform(df[categorical_features])
 
+    # One-hot encoding for categorical variables
     df = pd.get_dummies(df, columns=categorical_features, drop_first=True)
 
     return df
 
+
 # Load and preprocess dataset
 def load_and_preprocess_data(file_path):
     try:
-        print("Reading input file...")
+        print(f"Reading input file from: {file_path}")
+        # Check if the file exists
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f"The file at {file_path} does not exist.")
+        
+        # Read dataset
         if file_path.endswith(('.xls', '.xlsx')):
             df = pd.read_excel(file_path)
         else:
             df = pd.read_csv(file_path)
 
+        if df.empty:
+            raise ValueError("The dataset is empty.")
+
+        # Process the features
         df = extract_features(df)
         return df
+
     except Exception as e:
         print(f"Error loading and preprocessing data: {e}")
         return None
 
+
 # Function to scale the data using different scalers
 def scale_data(df, method='standard'):
-    if method == 'minmax':
-        scaler = MinMaxScaler()
-    elif method == 'robust':
-        scaler = RobustScaler()
-    else:
-        scaler = StandardScaler()
+    try:
+        # Choose scaler
+        if method == 'minmax':
+            scaler = MinMaxScaler()
+        elif method == 'robust':
+            scaler = RobustScaler()
+        else:
+            scaler = StandardScaler()
 
-    df[df.columns] = scaler.fit_transform(df)
-    return df, scaler
+        # Fit and transform the data
+        df[df.columns] = scaler.fit_transform(df)
+        return df, scaler
+
+    except Exception as e:
+        print(f"Error during scaling: {e}")
+        return None, None
+
+
+# Function to compare clustering algorithms
+def compare_algorithms(df, n_clusters_range=[3, 4, 5, 6], eps=0.5, min_samples=5):
+    results = {}
+
+    # KMeans Clustering
+    df_kmeans, _, _ = perform_kmeans_clustering(df, n_clusters_range)
+    kmeans_silhouette = silhouette_score(df.drop('Cluster', axis=1), df_kmeans['Cluster'])
+    kmeans_db_score = davies_bouldin_score(df.drop('Cluster', axis=1), df_kmeans['Cluster'])
+    results['KMeans'] = {'Silhouette Score': kmeans_silhouette, 'Davies-Bouldin Score': kmeans_db_score}
+
+    # DBSCAN Clustering
+    df_dbscan = perform_dbscan_clustering(df, eps, min_samples)
+    dbscan_silhouette = silhouette_score(df.drop('Cluster', axis=1), df_dbscan['Cluster'])
+    dbscan_db_score = davies_bouldin_score(df.drop('Cluster', axis=1), df_dbscan['Cluster'])
+    results['DBSCAN'] = {'Silhouette Score': dbscan_silhouette, 'Davies-Bouldin Score': dbscan_db_score}
+
+    # Agglomerative Clustering
+    df_agg = perform_agglomerative_clustering(df, n_clusters=3)
+    agg_silhouette = silhouette_score(df.drop('Cluster', axis=1), df_agg['Cluster'])
+    agg_db_score = davies_bouldin_score(df.drop('Cluster', axis=1), df_agg['Cluster'])
+    results['Agglomerative'] = {'Silhouette Score': agg_silhouette, 'Davies-Bouldin Score': agg_db_score}
+
+    return results
+
 
 # KMeans clustering with hyperparameter tuning
 def perform_kmeans_clustering(df, n_clusters_range=[3, 4, 5, 6]):
@@ -74,6 +121,7 @@ def perform_kmeans_clustering(df, n_clusters_range=[3, 4, 5, 6]):
     print(f"\nBest KMeans result: {best_n_clusters} clusters with Silhouette Score {best_score:.4f}")
     return df, best_n_clusters, silhouette_scores
 
+
 # DBSCAN clustering
 def perform_dbscan_clustering(df, eps=0.5, min_samples=5):
     dbscan = DBSCAN(eps=eps, min_samples=min_samples)
@@ -91,6 +139,7 @@ def perform_dbscan_clustering(df, eps=0.5, min_samples=5):
 
     return df
 
+
 # Agglomerative clustering
 def perform_agglomerative_clustering(df, n_clusters=3):
     agg = AgglomerativeClustering(n_clusters=n_clusters)
@@ -104,43 +153,24 @@ def perform_agglomerative_clustering(df, n_clusters=3):
 
     return df
 
+
 # Dimensionality reductions
 def perform_pca_reduction(df, n_components=2):
     pca = PCA(n_components=n_components)
     return pca.fit_transform(df.drop('Cluster', axis=1))
 
+
 def perform_tsne_reduction(df, n_components=2):
     tsne = TSNE(n_components=n_components, random_state=42)
     return tsne.fit_transform(df.drop('Cluster', axis=1))
+
 
 def perform_umap_reduction(df, n_components=2):
     reducer = umap.UMAP(n_components=n_components, random_state=42)
     return reducer.fit_transform(df.drop('Cluster', axis=1))
 
-# New improvement: Ensure consistent colors and cluster labeling
-def ensure_consistent_clusters(df, components):
-    """
-    Ensure that the cluster labels are consistent by assigning colors to clusters.
-    """
-    if 'Cluster' in df.columns:
-        unique_clusters = df['Cluster'].unique()
-        color_map = plt.cm.get_cmap('viridis', len(unique_clusters))
 
-        plt.figure(figsize=(8, 6))
-        for i, cluster in enumerate(unique_clusters):
-            cluster_data = components[df['Cluster'] == cluster]
-            plt.scatter(cluster_data[:, 0], cluster_data[:, 1], color=color_map(i), label=f"Cluster {cluster}")
-
-        plt.title('Clustered Data Visualization with Consistent Colors')
-        plt.xlabel('Component 1')
-        plt.ylabel('Component 2')
-        plt.legend()
-        plt.show()
-
-    else:
-        print("No cluster labels found to visualize.")
-
-# Visualization
+# Visualization of Clusters
 def visualize_clusters_and_dimensions(df, pca_components=None, tsne_components=None, umap_components=None, output_image_path=None):
     if output_image_path:
         output_dir = "../data_analysis"
@@ -168,31 +198,49 @@ def visualize_clusters_and_dimensions(df, pca_components=None, tsne_components=N
     if umap_components is not None:
         save_or_show(umap_components, "UMAP", "umap")
 
+
+# Performance Comparison Visualization
+def plot_comparison(results):
+    # Convert results dictionary to DataFrame for better visualization
+    df_results = pd.DataFrame(results).T
+    df_results = df_results[['Silhouette Score', 'Davies-Bouldin Score']]
+    
+    # Plot the comparison of performance metrics
+    df_results.plot(kind='bar', figsize=(10, 6), colormap='viridis', title='Clustering Algorithms Comparison')
+    plt.ylabel('Score')
+    plt.xlabel('Algorithm')
+    plt.tight_layout()
+    plt.show()
+
+
 # Main execution
 def main(file_path, clustering_method='kmeans', n_clusters=3, eps=0.5, min_samples=5, output_image="cluster_plot", scale_method='standard'):
     # Load and preprocess data
     df = load_and_preprocess_data(file_path)
     
+    if df is None:
+        return
+    
     # Scale the data using selected method
     df, scaler = scale_data(df, method=scale_method)
     
     if df is not None:
-        if clustering_method == "kmeans":
-            df, best_n_clusters, silhouette_scores = perform_kmeans_clustering(df, n_clusters_range=[n_clusters])
-        elif clustering_method == "dbscan":
-            df = perform_dbscan_clustering(df, eps=eps, min_samples=min_samples)
-        elif clustering_method == "agglomerative":
-            df = perform_agglomerative_clustering(df, n_clusters=n_clusters)
-
+        # Compare algorithms
+        comparison_results = compare_algorithms(df, n_clusters_range=[n_clusters], eps=eps, min_samples=min_samples)
+        
+        # Visualize clustering results
         pca_components = perform_pca_reduction(df, 2)
         tsne_components = perform_tsne_reduction(df, 2)
         umap_components = perform_umap_reduction(df, 2)
 
         visualize_clusters_and_dimensions(df, pca_components, tsne_components, umap_components, output_image_path=output_image)
-        ensure_consistent_clusters(df, pca_components)  # Ensures clusters are visualized consistently
+        
+        # Plot comparison metrics
+        plot_comparison(comparison_results)
 
         df.to_csv(f"../data_analysis/clustered_and_reduced_data.csv", index=False)
         print(f"Clustered data saved to '../data_analysis/clustered_and_reduced_data.csv'")
+
 
 # Argument Parsing
 if __name__ == "__main__":
