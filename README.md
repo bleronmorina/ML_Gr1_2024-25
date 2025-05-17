@@ -538,3 +538,78 @@ In this phase, we train and evaluate four supervised classifiers on our **FinalM
 - **Reduce Overfitting/Underfitting:** Ensure the models generalize well to unseen data by applying regularization and selecting appropriate hyperparameters.
 - **Improve Interpretability:** Enhance model transparency to better understand which features are influencing predictions.
 - **Ensemble Models:** Explore techniques like model stacking or bagging to combine multiple models for improved performance.
+
+
+##  Unsupervised Learning and Clustering Analysis
+
+### Overview
+
+In this phase, we developed and enhanced an unsupervised learning pipeline aimed at discovering intrinsic data patterns through clustering and dimensionality reduction techniques. This complements previous phases by providing exploratory insights without relying on labeled targets.
+
+### Key Improvements and Features
+
+- **Data Preprocessing:**  
+  - Handled missing values with mean imputation for numerical and mode imputation for categorical features.  
+  - Applied one-hot encoding for categorical variables to prepare the dataset for clustering.
+
+- **Flexible Data Scaling:**  
+  - Implemented multiple scaling strategies (StandardScaler, MinMaxScaler, RobustScaler) to normalize features, allowing for optimization of clustering outcomes.
+
+- **Clustering Algorithms Comparison:**  
+  - Applied three primary clustering methods:  
+    - **KMeans:** Utilized hyperparameter tuning for the optimal number of clusters.  
+    - **DBSCAN:** Leveraged density-based clustering to detect arbitrarily shaped clusters and noise.  
+    - **Agglomerative Clustering:** Explored hierarchical cluster structures via bottom-up merging.
+
+- **Evaluation Metrics:**  
+  - Quantitatively assessed cluster quality using Silhouette Score and Davies-Bouldin Score, providing objective measures of cohesion and separation.
+
+- **Output and Visualization:**  
+  - Generated and saved plots showing cluster distributions across PCA, t-SNE, and UMAP embeddings.  
+  - Produced comparative bar charts to illustrate clustering algorithm performance metrics.
+
+### Tools and Libraries Used
+
+The project leveraged a robust Python ecosystem tailored for data science and machine learning tasks, including:
+
+- **Python 3:** Primary programming language used for scripting the pipeline.
+- **pandas:** Data loading, cleaning, and manipulation.
+- **numpy:** Numerical computations and array operations.
+- **scikit-learn:** Core machine learning library providing clustering algorithms (KMeans, DBSCAN, AgglomerativeClustering), data preprocessing tools (imputers, scalers), dimensionality reduction (PCA, t-SNE), and evaluation metrics (silhouette_score, davies_bouldin_score).
+- **umap-learn:** For performing UMAP dimensionality reduction.
+- **matplotlib & seaborn:** Visualization libraries for creating scatter plots, bar charts, and other graphs.
+- **argparse:** Handling command-line interface arguments and configuring script parameters.
+
+This combination ensured efficient implementation, evaluation, and visualization of clustering results.
+
+### Clustering Performance Comparison
+
+The figure below illustrates the comparison of clustering performance across the three algorithms based on two key metrics: Silhouette Score and Davies-Bouldin Score.
+
+![Clustering Algorithms Comparison](Processing%20Scripts/data_analysis/comparison.png)
+
+
+- **Silhouette Score (purple bars):**  
+  Measures how similar an object is to its own cluster compared to other clusters. Higher values indicate better-defined clusters. Here, DBSCAN achieved the highest Silhouette Score (~0.6), suggesting well-separated clusters, followed by KMeans (~0.1), while Agglomerative clustering showed no significant Silhouette score.
+
+- **Davies-Bouldin Score (yellow bars):**  
+  Evaluates average similarity between each cluster and its most similar one, where lower values indicate better clustering. Interestingly, Agglomerative Clustering returned a high Davies-Bouldin Score (~13), indicating less distinct clusters, whereas KMeans and DBSCAN achieved much lower scores (~2.4 and ~1.1 respectively), suggesting tighter and more distinct clusters.
+
+### Interpretation
+
+- **DBSCAN** demonstrated superior cluster cohesion and separation, making it effective for this dataset, especially in identifying dense clusters and filtering noise.  
+- **KMeans** showed moderate performance but may be limited by the assumption of spherical cluster shapes.  
+- **Agglomerative Clustering** yielded less favorable results based on Davies-Bouldin Score, potentially due to sensitivity to linkage criteria and cluster shape.
+
+This comparative analysis guides the selection of appropriate clustering techniques tailored to the dataset's characteristics.
+
+---
+
+### How to Run
+
+Use the command-line interface to specify your dataset and clustering parameters:
+
+```bash
+python unsupervised_analysis.py path_to_data.csv --clustering_method dbscan --eps 0.5 --min_samples 5 --n_clusters 4 --scale_method standard --output_image cluster_plot
+
+
