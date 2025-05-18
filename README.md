@@ -530,7 +530,7 @@ The plot below shows the Silhouette Score as a function of the number of cluster
    – Feed cluster labels into supervised models to assess if cluster membership improves predictive performance.
 
 # Phase III
-In this phase, we train and evaluate four supervised classifiers on our **FinalMerged.csv** dataset. The goal is to classify countries/years into multiple levels (typically 5, from very low to very high) based on a user-selected mental health indicator.
+In this phase, the project focused on significantly enhancing both supervised and unsupervised learning pipelines. For supervised learning, improvements centered on optimizing model performance through hyperparameter tuning, reducing overfitting, and introducing ensemble methods like XGBoost for robust multi-class classification. In parallel, the unsupervised pipeline was developed to uncover hidden patterns in the data using clustering techniques such as KMeans, DBSCAN, and Agglomerative Clustering, supported by dimensionality reduction and visualization tools. Together, these efforts deepened interpretability and strengthened the predictive and exploratory capabilities of the models.
 
 ## Objectives
 
