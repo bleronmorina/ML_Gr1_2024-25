@@ -146,7 +146,7 @@ def main():
     # Define models and their hyperparameter grids for GridSearchCV
     models_and_params = {
         'LogisticRegression': (
-            LogisticRegression(solver='lbfgs', max_iter=2000, multi_class='auto', random_state=42),
+            LogisticRegression(solver='lbfgs', max_iter=2000, random_state=42),
             {'classifier__C': [0.01, 0.1, 1, 10], 'classifier__class_weight': [None, 'balanced']}
         ),
         'RandomForest': (

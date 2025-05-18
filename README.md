@@ -610,6 +610,273 @@ This comparative analysis guides the selection of appropriate clustering techniq
 Use the command-line interface to specify your dataset and clustering parameters:
 
 ```bash
-python unsupervised_analysis.py path_to_data.csv --clustering_method dbscan --eps 0.5 --min_samples 5 --n_clusters 4 --scale_method standard --output_image cluster_plot
+python unsupervised_analysis.py path_to_data.csv --clustering_method dbscan --eps 0.5 --min_samples 5 --n_clusters 4 --scale_method standard --output_image cluster_plo 
+```
 
 
+## Supervised Learning Enhancements and Detailed Analysis
+
+In Phase III, we built upon the foundational supervised learning experiments from Phase II. The primary objective was to enhance model performance, ensure robustness, and provide a deeper interpretation of the results. This involved systematic hyperparameter tuning for all previously implemented classifiers (Logistic Regression, Random Forest, Gradient Boosting, and SVM) and the introduction of XGBoost, a powerful gradient boosting framework known for its high performance.
+
+### Objectives Revisited and Achieved
+
+Our goals for this phase, as outlined previously, were:
+
+1.  **Optimize Model Performance:** Achieved through comprehensive hyperparameter tuning using `GridSearchCV` with `StratifiedKFold` cross-validation. This ensured that each model was configured with parameters that maximized its predictive capability on the given task.
+2.  **Reduce Overfitting/Underfitting:** The cross-validation strategy inherently helps in selecting models that generalize well. Additionally, regularization parameters (like `C` for Logistic Regression/SVC, and inherent regularization in tree-based ensembles) were part of the tuning process. The use of `class_weight='balanced'` or similar options in some models also helps address potential biases if the quintile classes, despite `qcut` aiming for balance, had minor imbalances or if the model struggled with certain classes.
+3.  **Improve Interpretability:** While the core focus of the script was performance optimization, the detailed classification reports and confusion matrices generated for each tuned model provide class-specific insights. Feature importance (inherent in tree models) can be readily extracted from the best-tuned tree-based models.
+4.  **Introduce Advanced Ensemble Models:** XGBoost was successfully integrated and tuned, often providing state-of-the-art results for classification tasks.
+
+### Methodology Enhancements
+
+The supervised learning pipeline from Phase II was significantly upgraded:
+
+1.  **Robust Preprocessing Pipeline:**
+    *   **Feature Identification:** Clear separation of numeric and categorical features (`Region`, `IncomeGroup`).
+    *   **Imputation:** `SimpleImputer` used median for numeric and most frequent for categorical features within a `ColumnTransformer`.
+    *   **Scaling:** `StandardScaler` applied to numeric features.
+    *   **Encoding:** `OneHotEncoder` applied to categorical features, handling unknown categories gracefully.
+    *   All preprocessing steps were integrated into a `scikit-learn Pipeline` to prevent data leakage and streamline the workflow.
+
+2.  **Systematic Hyperparameter Optimization:**
+    *   `GridSearchCV` was employed for each of the five classifiers: Logistic Regression, Random Forest, Gradient Boosting, SVM, and XGBoost.
+    *   A `StratifiedKFold` cross-validation strategy (with 5 splits) was used to ensure robust evaluation and maintain class proportions during tuning.
+    *   The primary scoring metric for optimization was `f1_weighted`, which is suitable for multi-class problems and accounts for potential minor class imbalances.
+
+3.  **Comprehensive Evaluation:**
+    *   Models were evaluated on a held-out test set (20% of the data).
+    *   Metrics included:
+        *   Accuracy
+        *   Weighted Precision, Recall, and F1-Score
+        *   Detailed per-class classification reports
+        *   Confusion matrices for each tuned model.
+
+### Target Variable and Feature Set
+
+For the results presented below, the analysis pipeline was executed with the following configuration:
+
+*   **Target Variable Selected:** `Schizophrenia disorders (share of population) - Sex: Both - Age: Age-standardized`
+*   **Target Variable Preparation:** The continuous target was discretized into **5 quintiles (classes 0-4)** using `pd.qcut`, resulting in a balanced multi-class classification problem.
+    ```
+    Target variable created with 5 classes (0 to 4).
+    Class distribution:
+     target
+    0    0.2
+    1    0.2
+    2    0.2
+    3    0.2
+    4    0.2
+    Name: proportion, dtype: float64
+    ```
+*   **Predictor Features:** All available numeric indicators (e.g., Year, HDI, GNI, other DALY rates) and categorical indicators (`Region`, `IncomeGroup`) were used as predictors after appropriate preprocessing.
+    ```
+    Numeric features: ['Year', 'abr', 'co2_prod', 'coef_ineq', 'diff_hdi_phdi', 'eys', 'eys_f', 'eys_m', 'gdi', 'gii', 'gni_pc_f', 'gni_pc_m', 'gnipc', 'hdi', 'hdi_f', 'hdi_m', 'ihdi', 'ineq_edu', 'ineq_inc', 'ineq_le', 'le', 'le_f', 'le_m', 'lfpr_f', 'lfpr_m', 'loss', 'mf', 'mmr', 'mys', 'mys_f', 'mys_m', 'phdi', 'pr_f', 'pr_m', 'se_f', 'se_m', 'Birth rate, crude (per 1,000 people)', 'Death rate, crude (per 1,000 people)', 'Electric power consumption (kWh per capita)', 'GDP (USD)', 'GDP per capita (USD)', 'Individuals using the Internet (% of population)', 'Infant mortality rate (per 1,000 live births)', 'Life expectancy at birth (years)', 'Population density (people per sq. km of land area)', 'Unemployment (% of total labor force) (modeled ILO estimate)', 'DALYs (rate) - Sex: Both - Age: Age-standardized - Cause: Depressive disorders', 'DALYs (rate) - Sex: Both - Age: Age-standardized - Cause: Schizophrenia', 'DALYs (rate) - Sex: Both - Age: Age-standardized - Cause: Bipolar disorder', 'DALYs (rate) - Sex: Both - Age: Age-standardized - Cause: Eating disorders', 'DALYs (rate) - Sex: Both - Age: Age-standardized - Cause: Anxiety disorders', 'Depressive disorders (share of population) - Sex: Both - Age: Age-standardized', 'Anxiety disorders (share of population) - Sex: Both - Age: Age-standardized', 'Bipolar disorders (share of population) - Sex: Both - Age: Age-standardized', 'Eating disorders (share of population) - Sex: Both - Age: Age-standardized']
+    Categorical features: ['Region', 'IncomeGroup']
+    ```
+
+### Phase III Supervised Learning Results
+
+The following table summarizes the performance of each classifier on the test set after hyperparameter tuning, using `Schizophrenia disorders (share of population)` as the target, discretized into 5 levels.
+
+| Model                     | Best CV F1 (Weighted) | Test Accuracy | Test Precision (W) | Test Recall (W) | Test F1 (W) | Best Parameters                                                                                                              |
+| :------------------------ | :-------------------- | :------------ | :----------------- | :-------------- | :---------- | :--------------------------------------------------------------------------------------------------------------------------- |
+| **Gradient Boosting**     | 0.979133              | **0.980944**  | **0.981276**       | **0.980944**    | **0.980941**| `{'classifier__learning_rate': 0.1, 'classifier__max_depth': 5, 'classifier__n_estimators': 200}`                                                              |
+| **Random Forest**         | **0.982753**          | 0.979129      | 0.979462           | 0.979129        | 0.979156    | `{'classifier__class_weight': 'balanced_subsample', 'classifier__max_depth': 20, 'classifier__min_samples_split': 2, 'classifier__n_estimators': 200}`                     |
+| **XGBoost**               | 0.982530              | 0.977314      | 0.977885           | 0.977314        | 0.977342    | `{'classifier__learning_rate': 0.1, 'classifier__max_depth': 5, 'classifier__n_estimators': 200}`                                                              |
+| **Support Vector Machine (SVC)** | 0.965480              | 0.968240      | 0.968962           | 0.968240        | 0.968350    | `{'classifier__C': 10, 'classifier__class_weight': None, 'classifier__gamma': 'scale', 'classifier__kernel': 'linear'}`                                                      |
+| **Logistic Regression**   | 0.958252              | 0.960073      | 0.961139           | 0.960073        | 0.960224    | `{'classifier__C': 10, 'classifier__class_weight': None}`                                                                                            |
+
+*(Note: Test F1 (W) is the primary metric for comparison on the test set. Best CV F1 is the score achieved during cross-validation on the training set with the best parameters.)*
+
+#### Detailed Confusion Matrices and Classification Reports (Test Set)
+
+**Logistic Regression**
+*   Best Parameters: `{'classifier__C': 10, 'classifier__class_weight': None}`
+*   Confusion Matrix:
+    |           | Pred 0 | Pred 1 | Pred 2 | Pred 3 | Pred 4 |
+    | :-------- | -----: | -----: | -----: | -----: | -----: |
+    | **Actual 0** |    215 |      6 |      0 |      0 |      0 |
+    | **Actual 1** |      7 |    211 |      2 |      0 |      0 |
+    | **Actual 2** |      0 |      3 |    207 |     10 |      0 |
+    | **Actual 3** |      0 |      0 |      3 |    216 |      2 |
+    | **Actual 4** |      0 |      0 |      0 |     11 |    209 |
+*   Classification Report:
+    ```
+                   precision    recall  f1-score   support
+
+         Class 0       0.97      0.97      0.97       221
+         Class 1       0.96      0.96      0.96       220
+         Class 2       0.98      0.94      0.96       220
+         Class 3       0.91      0.98      0.94       221
+         Class 4       0.99      0.95      0.97       220
+
+        accuracy                           0.96      1102
+       macro avg       0.96      0.96      0.96      1102
+    weighted avg       0.96      0.96      0.96      1102
+    ```
+
+**Random Forest**
+*   Best Parameters: `{'classifier__class_weight': 'balanced_subsample', 'classifier__max_depth': 20, 'classifier__min_samples_split': 2, 'classifier__n_estimators': 200}`
+*   Confusion Matrix:
+    |           | Pred 0 | Pred 1 | Pred 2 | Pred 3 | Pred 4 |
+    | :-------- | -----: | -----: | -----: | -----: | -----: |
+    | **Actual 0** |    218 |      3 |      0 |      0 |      0 |
+    | **Actual 1** |      3 |    217 |      0 |      0 |      0 |
+    | **Actual 2** |      0 |      4 |    211 |      5 |      0 |
+    | **Actual 3** |      0 |      0 |      1 |    218 |      2 |
+    | **Actual 4** |      0 |      0 |      0 |      5 |    215 |
+*   Classification Report:
+    ```
+                   precision    recall  f1-score   support
+
+         Class 0       0.99      0.99      0.99       221
+         Class 1       0.97      0.99      0.98       220
+         Class 2       1.00      0.96      0.98       220
+         Class 3       0.96      0.99      0.97       221
+         Class 4       0.99      0.98      0.98       220
+
+        accuracy                           0.98      1102
+       macro avg       0.98      0.98      0.98      1102
+    weighted avg       0.98      0.98      0.98      1102
+    ```
+
+**Gradient Boosting**
+*   Best Parameters: `{'classifier__learning_rate': 0.1, 'classifier__max_depth': 5, 'classifier__n_estimators': 200}`
+*   Confusion Matrix:
+    |           | Pred 0 | Pred 1 | Pred 2 | Pred 3 | Pred 4 |
+    | :-------- | -----: | -----: | -----: | -----: | -----: |
+    | **Actual 0** |    220 |      1 |      0 |      0 |      0 |
+    | **Actual 1** |      1 |    219 |      0 |      0 |      0 |
+    | **Actual 2** |      0 |      4 |    209 |      7 |      0 |
+    | **Actual 3** |      0 |      0 |      1 |    217 |      3 |
+    | **Actual 4** |      0 |      0 |      0 |      4 |    216 |
+*   Classification Report:
+    ```
+                   precision    recall  f1-score   support
+
+         Class 0       1.00      1.00      1.00       221
+         Class 1       0.98      1.00      0.99       220
+         Class 2       1.00      0.95      0.97       220
+         Class 3       0.95      0.98      0.97       221
+         Class 4       0.99      0.98      0.98       220
+
+        accuracy                           0.98      1102
+       macro avg       0.98      0.98      0.98      1102
+    weighted avg       0.98      0.98      0.98      1102
+    ```
+
+**Support Vector Machine (SVC)**
+*   Best Parameters: `{'classifier__C': 10, 'classifier__class_weight': None, 'classifier__gamma': 'scale', 'classifier__kernel': 'linear'}`
+*   Confusion Matrix:
+    |           | Pred 0 | Pred 1 | Pred 2 | Pred 3 | Pred 4 |
+    | :-------- | -----: | -----: | -----: | -----: | -----: |
+    | **Actual 0** |    213 |      8 |      0 |      0 |      0 |
+    | **Actual 1** |      2 |    217 |      1 |      0 |      0 |
+    | **Actual 2** |      0 |      3 |    211 |      6 |      0 |
+    | **Actual 3** |      0 |      0 |      5 |    215 |      1 |
+    | **Actual 4** |      0 |      0 |      0 |      9 |    211 |
+*   Classification Report:
+    ```
+                   precision    recall  f1-score   support
+
+         Class 0       0.99      0.96      0.98       221
+         Class 1       0.95      0.99      0.97       220
+         Class 2       0.97      0.96      0.97       220
+         Class 3       0.93      0.97      0.95       221
+         Class 4       1.00      0.96      0.98       220
+
+        accuracy                           0.97      1102
+       macro avg       0.97      0.97      0.97      1102
+    weighted avg       0.97      0.97      0.97      1102
+    ```
+
+**XGBoost**
+*   Best Parameters: `{'classifier__learning_rate': 0.1, 'classifier__max_depth': 5, 'classifier__n_estimators': 200}`
+*   Confusion Matrix:
+    |           | Pred 0 | Pred 1 | Pred 2 | Pred 3 | Pred 4 |
+    | :-------- | -----: | -----: | -----: | -----: | -----: |
+    | **Actual 0** |    218 |      3 |      0 |      0 |      0 |
+    | **Actual 1** |      3 |    217 |      0 |      0 |      0 |
+    | **Actual 2** |      0 |      3 |    208 |      9 |      0 |
+    | **Actual 3** |      0 |      0 |      0 |    218 |      3 |
+    | **Actual 4** |      0 |      0 |      0 |      4 |    216 |
+*   Classification Report:
+    ```
+                   precision    recall  f1-score   support
+
+         Class 0       0.99      0.99      0.99       221
+         Class 1       0.97      0.99      0.98       220
+         Class 2       1.00      0.95      0.97       220
+         Class 3       0.94      0.99      0.96       221
+         Class 4       0.99      0.98      0.98       220
+
+        accuracy                           0.98      1102
+       macro avg       0.98      0.98      0.98      1102
+    weighted avg       0.98      0.98      0.98      1102
+    ```
+
+### Discussion of Phase III Results
+
+#### Comparison with Phase II
+
+The models in Phase III, benefiting from systematic hyperparameter tuning and the inclusion of categorical features via one-hot encoding, demonstrated a notable improvement in performance and robustness compared to the initial results from Phase II.
+
+*   **Overall Performance Lift:** All models saw an increase in their F1-scores. For instance, Logistic Regression improved from an F1-score of ~0.916 (Phase II) to ~0.960 (Phase III), and Random Forest from ~0.978 to ~0.979. While the top-performing models (Random Forest, Gradient Boosting) were already strong, tuning helped solidify their performance and often slightly improved it. XGBoost, newly introduced, immediately established itself as a top contender.
+*   **Reduced Misclassifications:** The confusion matrices from Phase III generally show fewer off-diagonal elements, especially for the more challenging adjacent classes, compared to the untuned models in Phase II. This indicates better discrimination between the quintile levels of Schizophrenia prevalence.
+*   **SVM Kernel Choice:** Interestingly, the tuned SVC model selected the `'linear'` kernel as optimal (`'C': 10, 'kernel': 'linear'`), whereas in Phase II we explicitly used an RBF kernel. This suggests that for this particular target and feature set, after proper scaling and with the tuned `C` parameter, a linear separation (or one effectively managed by a linear kernel in the high-dimensional space of one-hot encoded features) was sufficient for SVM to achieve competitive results (~0.968 F1-score). This highlights the importance of exploring different kernel types during tuning.
+
+#### Model Performance Insights
+
+*   **Ensemble Dominance:** Consistent with Phase II and often observed in tabular data, the ensemble tree-based methods (Gradient Boosting, Random Forest, and XGBoost) were the top performers, achieving weighted F1-scores around 0.98 on the test set. Gradient Boosting slightly edged out the others in this specific run on the test set F1-score, though Random Forest had the highest cross-validated F1-score.
+*   **XGBoost:** The inclusion of XGBoost confirmed its reputation as a powerful algorithm, delivering performance on par with the best Scikit-learn ensembles. Its parameters (`learning_rate=0.1, max_depth=5, n_estimators=200`) are typical for well-performing XGBoost models.
+*   **Logistic Regression and SVM:** While not reaching the peak performance of the ensembles, both Logistic Regression and SVM achieved highly respectable F1-scores (~0.960 and ~0.968, respectively) after tuning. This demonstrates their utility as strong baseline models and their capability when appropriately configured. The linear SVM's success is particularly noteworthy.
+
+#### What These Results Mean (Contribution and Impact)
+
+The results from this phase provide significant contributions:
+
+1.  **Predictive Capability:** We have demonstrated that a country/year's level of Schizophrenia disorder prevalence (categorized into five severity levels) can be predicted with very high accuracy (around 98%) using a combination of socioeconomic, demographic, and other health-related indicators.
+2.  **Identification of Key Predictive Patterns:** The high performance of the models, especially tree-based ones, implies that complex, potentially non-linear relationships and interactions exist between the predictor variables and the levels of Schizophrenia prevalence. While detailed feature importance analysis is a next step, the models are effectively learning these patterns.
+3.  **Methodological Robustness:** The use of pipelines, cross-validation, and systematic hyperparameter tuning establishes a robust methodology for tackling similar public health prediction tasks. This work provides a template that others can adapt.
+
+#### Who Do These Results Help and How?
+
+*   **Public Health Policymakers and Researchers:**
+    *   **Early Warning/Risk Stratification:** While not a causal model, the predictive capability can help identify countries or regions that, based on their current socio-economic profile, might be at higher risk of having a greater burden of Schizophrenia. This could inform resource allocation or targeted screening/intervention strategies.
+    *   **Understanding Correlates:** By examining the features that are most important to the best models (a future step), policymakers can gain insights into which socioeconomic factors are most strongly associated with different levels of Schizophrenia prevalence. This can guide policy interventions aimed at addressing those underlying factors. For example, if 'unemployment' or 'low education levels' consistently emerge as important predictors for higher Schizophrenia quintiles, policies addressing these areas could be prioritized.
+*   **Healthcare Organizations:** Can use these insights to anticipate demand for mental health services based on evolving socio-economic landscapes.
+*   **Academic Community:** This project demonstrates a practical application of machine learning to a complex public health issue, providing a case study and benchmark results for future research in this domain.
+
+### Conclusions from Phase III
+
+Phase III successfully enhanced our supervised learning models, leading to high-accuracy classifiers for predicting quintile-based levels of Schizophrenia prevalence. Key takeaways include:
+
+*   Hyperparameter tuning is crucial for maximizing model performance and can lead to significant gains, even for already strong models.
+*   Ensemble methods like Random Forest, Gradient Boosting, and XGBoost are exceptionally well-suited for this type of complex, tabular dataset, likely due to their ability to capture non-linearities and feature interactions.
+*   Even simpler models like Logistic Regression and SVM, when properly tuned and preprocessed, can provide strong predictive power.
+*   The high predictability of Schizophrenia prevalence levels based on socioeconomic and health indicators suggests strong underlying correlations that warrant further investigation through feature importance analysis and potentially causal inference studies.
+
+### Future Work and Recommendations
+
+Building on the robust pipeline and strong results from this phase, several avenues for future work can be explored:
+
+1.  **Detailed Feature Importance and SHAP Analysis:**
+    *   Extract and analyze feature importances from the best-performing tree-based models (Random Forest, Gradient Boosting, XGBoost).
+    *   Employ SHAP (SHapley Additive exPlanations) values to understand the impact of individual features on predictions for specific instances or classes, providing deeper insights into model behavior.
+
+2.  **Experimentation with Other Target Variables:**
+    *   Apply the same optimized pipeline to predict levels for other mental health indicators available in the dataset (e.g., DALYs for Depressive Disorders, Anxiety Disorders share) to assess model generalizability and identify common vs. disorder-specific socio-economic correlates.
+
+3.  **Regression Modeling:**
+    *   Instead of classifying into quintiles, train regression models (e.g., RandomForestRegressor, XGBoostRegressor) to predict the *actual continuous rate* of the chosen mental health indicator. This would provide more granular predictions and allow for evaluation using regression metrics (RMSE, MAE, R²).
+
+4.  **Temporal Analysis and Forecasting:**
+    *   Explore time-series specific models or feature engineering (e.g., lagged variables) to understand temporal trends and potentially forecast future mental health indicator levels. This would require careful handling of the time dimension in train/test splits and cross-validation.
+
+5.  **Exploring Causal Relationships:**
+    *   While this project focuses on prediction, future research could delve into causal inference methods (e.g., instrumental variables, difference-in-differences, if suitable quasi-experimental settings can be identified) to try and understand if certain socio-economic changes *cause* changes in mental health outcomes.
+
+6.  **Deployment Considerations (Hypothetical):**
+    *   If such a model were to be used in a practical setting, considerations for model deployment, monitoring, and retraining would be necessary.
+
+This phase significantly advanced our understanding of how machine learning can be applied to analyze the interplay between socioeconomic factors and mental health indicators, yielding highly accurate predictive models and a clear path for future enhancements and deeper insights.
